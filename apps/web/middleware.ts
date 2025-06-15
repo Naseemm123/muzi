@@ -4,7 +4,6 @@ import { NextResponse, type NextRequest } from "next/server";
 const protectedRoutes = ["/room", "/space"];
 
 export async function middleware(request: NextRequest) {
-  console.log("Middleware triggered for request:", request.url);
   const session = await auth();
   const { pathname } = request.nextUrl;
 
