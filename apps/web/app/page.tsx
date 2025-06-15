@@ -1,12 +1,17 @@
-import { Button } from "@workspace/ui/components/button"
+import { ModeToggle } from "@/components/mode";
+import { SignIn, SignOut } from "@/components/signin";
+import { auth } from "@/auth";
 
-export default function Page() {
+export default async function Page() {
+  const session = await auth();
+
   return (
     <div className="flex items-center justify-center min-h-svh">
       <div className="flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold">Hello World</h1>
-        <Button size="sm">Button</Button>
+        <h1 className="text-2xl font-bold">Landing Page</h1>
+        <ModeToggle />
+        {!session ? <SignIn /> : <SignOut />}
       </div>
     </div>
-  )
+  );
 }
