@@ -1,15 +1,24 @@
-import { signIn, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import { Button } from "@workspace/ui/components/button";
+import { redirect } from "next/navigation";
 
 export function SignIn() {
+  // where user clicks button redirect to sign in page
   return (
     <form
       action={async () => {
         "use server";
-        await signIn();
+        // redirect to sign in page
+        redirect("/signin");
       }}
     >
-      <Button type="submit">sign in</Button>
+           <Button 
+              type="submit"
+              variant="ghost" 
+              className="text-white/70 hover:text-white hover:bg-white/5"
+            >
+              Sign In
+            </Button>
     </form>
   );
 }
@@ -22,7 +31,13 @@ export function SignOut() {
         await signOut();
       }}
     >
-      <Button type="submit">sign out</Button>
+      <Button 
+         type="submit"
+         variant="ghost" 
+         className="text-white/70 hover:text-white hover:bg-white/5"
+      >
+        Sign Out
+      </Button>
     </form>
   );
 }

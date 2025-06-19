@@ -76,7 +76,6 @@ export function Hero({ session }: HeroProps) {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up delay-300">
           {!session ? (
             <>
-              <SignIn />
               <Button 
                 variant="ghost" 
                 className="text-white/70 hover:text-white hover:bg-white/5 group relative overflow-hidden"
@@ -95,7 +94,7 @@ export function Hero({ session }: HeroProps) {
               >
                 <Link href="/room">
                   <div className="absolute inset-0 bg-black/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative z-10">Enter Dashboard</span>
+                  <span className="relative z-10">Get Started</span>
                   <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1 relative z-10" />
                 </Link>
               </Button>

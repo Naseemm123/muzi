@@ -17,18 +17,6 @@ export function Header({ session }: HeaderProps) {
         </div>
         <span className="text-white font-medium text-xl tracking-tight">Muzi</span>
       </div>
-      
-      <nav className="hidden md:flex items-center space-x-12 text-white/70">
-        <Link href="#features" className="hover:text-white transition-all duration-300 text-sm font-medium">
-          Features
-        </Link>
-        <Link href="#pricing" className="hover:text-white transition-all duration-300 text-sm font-medium">
-          Pricing
-        </Link>
-        <Link href="#docs" className="hover:text-white transition-all duration-300 text-sm font-medium">
-          Docs
-        </Link>
-      </nav>
 
       <div className="flex items-center space-x-4">
         {session ? (
@@ -38,18 +26,12 @@ export function Header({ session }: HeaderProps) {
               className="text-white/70 hover:text-white hover:bg-white/5"
               asChild
             >
-              <Link href="/room">Dashboard</Link>
+              <Link href="/room">Rooms</Link>
             </Button>
             <SignOut />
           </div>
         ) : (
           <div className="flex items-center space-x-3">
-            <Button 
-              variant="ghost" 
-              className="text-white/70 hover:text-white hover:bg-white/5"
-            >
-              Sign In
-            </Button>
             <SignIn />
           </div>
         )}

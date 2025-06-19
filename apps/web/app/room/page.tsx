@@ -12,7 +12,7 @@ export default async function Room() {
       <hr />
       <br />
       <h1 className="text-2xl font-bold text-center">
-        Hey {session?.user?.name}, your email is {session?.user?.email}
+        Hey {session?.user?.name}, your email is {session?.user?.email} and access token is {session?.accessToken}
       </h1>
       <Form action={test} type="Join"></Form>
       <br />

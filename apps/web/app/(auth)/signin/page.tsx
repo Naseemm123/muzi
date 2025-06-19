@@ -30,6 +30,18 @@ export default function SignInPage() {
             Sign in with Google
           </Button>
         </form>
+        <form
+          action={async () => {
+            "use server";
+            await signIn("spotify", {
+              redirectTo: "/room",
+            });
+          }}
+        >
+          <Button type="submit" className="btn btn-primary">
+            Sign in with Spotify
+          </Button>
+        </form>
       </div>
     </div>
   );

@@ -1,11 +1,48 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
+import Spotify from "next-auth/providers/spotify";
+
+// Extend the Session type to include accessToken
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+  }
+}
 
 const nextAuthResult = NextAuth({
-  providers: [GitHub, Google],
+  providers: [
+    GitHub,
+    Google,
+    Spotify({
+      authorization: {
+        params: {
+          scope: "user-read-email user-read-private",
+          redirect_uri: process.env.NODE_ENV === 'development'
+            ? "http://127.0.0.1:3000/api/auth/callback/spotify"
+            : `${process.env.NEXTAUTH_URL}/api/auth/callback/spotify`
+        }
+      }
+    })
+  ],
   pages: {
-    signIn: "/signin",
+    error: "/error"
+  },
+  callbacks: {
+    // give the user the access token provided by the OAuth provider
+    async jwt({ token, account }) {
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
+    // add the access token to the session object
+    async session({ session, token }) {
+      if (token) {
+        session.accessToken = typeof token.accessToken === "string" ? token.accessToken : undefined;
+      }
+      return session;
+    }
   },
 });
 

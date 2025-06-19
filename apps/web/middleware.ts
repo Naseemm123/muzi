@@ -7,6 +7,10 @@ export async function middleware(request: NextRequest) {
   const session = await auth();
   const { pathname } = request.nextUrl;
 
+    if (pathname.startsWith('/api/auth')) {
+    return NextResponse.next();
+  }
+
   // redirect to room if user is authenticated and tries to access signin page
   if (pathname === "/signin" && session) {
     return NextResponse.redirect(new URL("/room", request.url));
@@ -29,11 +33,10 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
