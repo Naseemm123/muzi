@@ -19,6 +19,7 @@ const nextAuthResult = NextAuth({
   pages: {
     error: "/error"
   },
+  trustHost: true,
   callbacks: {
     // give the user the access token provided by the OAuth provider
     async jwt({ token, account }) {
