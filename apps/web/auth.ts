@@ -14,16 +14,7 @@ const nextAuthResult = NextAuth({
   providers: [
     GitHub,
     Google,
-    Spotify({
-      authorization: {
-        params: {
-          scope: "user-read-email user-read-private",
-          redirect_uri: process.env.NODE_ENV === 'development'
-            ? "http://127.0.0.1:3000/api/auth/callback/spotify"
-            : `${process.env.NEXTAUTH_URL}/api/auth/callback/spotify`
-        }
-      }
-    })
+    Spotify
   ],
   pages: {
     error: "/error"

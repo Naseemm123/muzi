@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import Form from "./form";
-import { test } from "../actions";
+import { test } from "@/actions";
 
 export default async function Room() {
   const session = await auth();

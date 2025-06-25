@@ -15,7 +15,7 @@ export function SignIn() {
            <Button 
               type="submit"
               variant="ghost" 
-              className="text-white/70 hover:text-white hover:bg-white/5"
+              className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
             >
               Sign In
             </Button>
@@ -34,7 +34,7 @@ export function SignOut() {
       <Button 
          type="submit"
          variant="ghost" 
-         className="text-white/70 hover:text-white hover:bg-white/5"
+         className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
       >
         Sign Out
       </Button>
