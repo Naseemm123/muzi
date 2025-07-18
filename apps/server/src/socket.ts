@@ -15,13 +15,13 @@ export function initializeSocketServer() {
       socket.broadcast.emit("chat-message", message);
     });
 
-    socket.on("join", ({ message, room }) => {
+    socket.on("join", ({ message, room } : { message: string, room: string}) => {
       socket.join(room);
       socket.to(room).emit("chat-message", message);
     });
   });
 
-  io.on("disconnect", (socket) => {
+  io.on("disconnect", (socket) => {-
     console.log(`Client disconnected: ${socket.id}`);
   });
 

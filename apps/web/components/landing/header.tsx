@@ -1,14 +1,9 @@
-import { ModeToggle } from "@/components/mode";
 import { SignIn, SignOut } from "@/components/signin";
 import { Button } from "@workspace/ui/components/button";
 import Link from "next/link";
-import { Session } from "next-auth";
 
-interface HeaderProps {
-  session: Session | null;
-}
 
-export function Header({ session }: HeaderProps) {
+export function Header({ session } : any) {
   return (
     <header className="relative z-10 flex justify-between items-center p-8 border-b border-white/5 backdrop-blur-xl animate-fadeInUp">
       <div className="flex items-center space-x-2 group cursor-pointer">

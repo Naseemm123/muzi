@@ -1,11 +1,16 @@
-import { auth } from "@/auth";
 import { Header } from "@/components/landing/header";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
 import { Footer } from "@/components/landing/footer";
+import { auth } from "@/lib/auth"; // path to your Better Auth server instance
+import { headers } from "next/headers";
 
 export default async function Page() {
-  const session = await auth();
+
+ 
+const session = await auth.api.getSession({
+    headers: await headers() // you need to pass the headers object.
+})
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">

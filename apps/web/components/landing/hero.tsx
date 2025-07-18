@@ -1,14 +1,8 @@
 import { Button } from "@workspace/ui/components/button";
 import Link from "next/link";
-import { SignIn } from "@/components/signin";
-import { Session } from "next-auth";
 import { ArrowRight, Github } from "lucide-react";
 
-interface HeroProps {
-  session: Session | null;
-}
-
-export function Hero({ session }: HeroProps) {
+export function Hero({ session }: any) {
   return (
     <main className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] px-8 text-center overflow-hidden">
       
@@ -81,8 +75,7 @@ export function Hero({ session }: HeroProps) {
                 className="text-white/70 hover:text-white hover:bg-white/5 group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/5 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                <Github className="w-4 h-4 mr-2 relative z-10" />
-                <span className="relative z-10">View on GitHub</span>
+                <span className="relative z-10 pl-3">Get Started</span>
                 <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1 relative z-10" />
               </Button>
             </>

@@ -1,43 +1,33 @@
-import { signOut } from "@/auth";
+'use client'
+
 import { Button } from "@workspace/ui/components/button";
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { signOut } from "@/lib/auth-client";
 
 export function SignIn() {
   // where user clicks button redirect to sign in page
   return (
-    <form
-      action={async () => {
-        "use server";
-        // redirect to sign in page
-        redirect("/signin");
-      }}
+    <Button
+      type="submit"
+      variant="ghost"
+      className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
     >
-           <Button 
-              type="submit"
-              variant="ghost" 
-              className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
-            >
-              Sign In
-            </Button>
-    </form>
+      <Link href={"/signin"}>
+        Sign In
+      </Link>
+    </Button>
   );
 }
 
 export function SignOut() {
   return (
-    <form
-      action={async () => {
-        "use server";
-        await signOut();
-      }}
+    <Button
+      onClick={async () => await signOut()}
+      type="submit"
+      variant="ghost"
+      className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
     >
-      <Button 
-         type="submit"
-         variant="ghost" 
-         className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
-      >
-        Sign Out
-      </Button>
-    </form>
+      Sign Out
+    </Button>
   );
 }
