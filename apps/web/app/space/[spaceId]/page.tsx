@@ -1,100 +1,77 @@
 "use client";
 
-import { io, Socket } from "socket.io-client";
-import { Button } from "@workspace/ui/components/button";
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";  
 import { useParams } from "next/navigation";
+import { Music } from "lucide-react";
+import { SpotifyInput, SpotifyEmbed } from "./spotify-player";
 
 export default function Space() {
   const params = useParams();
   const spaceId = params.spaceId as string;
-  const socketRef = useRef<Socket | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
-  const [room, setRoom] = useState("");
+  const [currentTrack, setCurrentTrack] = useState({ url: "", embedUrl: "" });
+  const socketRef = useRef<Socket | null>(null)
 
-  console.log(`space ID: ${spaceId}`);
+  const handleTrackChange = (url: string, embedUrl: string) => {
+    setCurrentTrack({ url, embedUrl });
+    
+    // Emit track change event to server
+    if (socketRef.current) {
+      socketRef.current.emit("trackChange", { url, embedUrl, spaceId });
+    }
+  };
+
+  // intialize websocket connection here 
 
   useEffect(() => {
-    const socket = io("http://localhost:3001");
 
-    socket.emit("join", { spaceId });
+    console.log('Initializing WebSocket connection for space:', spaceId);
 
-    socket.on("connect", () => {
-      console.log(`Connected to socket server with ID: ${socket.id}`);
-      socketRef.current = socket;
-    });
+    const socket = io("http://127.0.0.1:3001")
+    
+    socketRef.current = socket;
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected from socket server");
-    });
+    socket.on("connect", () => console.log("Connected to WebSocket server"));
 
-    socket.on("chat-message", (message: string) => {
-      console.log(`received: ${message}`);
-      setMessages((prevMessages) => [...prevMessages, message]);
-    });
+    socket.on("connect_error", (err) => console.error("Connection error:", err) )
 
-    socket.on("connect_error", (error: any) => {
-      console.error("Socket error:", error);
-    });
+    socket.emit("joinSpace", { spaceId });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [spaceId]);
+    socket.on("trackUpdate", ({ url, embedUrl }) => setCurrentTrack({ url, embedUrl }));
 
-  function handleSend(event: React.FormEvent) {
-    event.preventDefault();
-    if (message) {
-      if (room) {
-        socketRef.current?.emit("join", { message, room });
-        return;
-      }
-      socketRef.current?.emit("chat-message", message);
-
-      setMessages((prevMessages) => [...prevMessages, message]);
-    }
-    if (!message) {
-      alert("Please enter a message");
-      return;
-    }
-    setMessage("");
-  }
+  }, [spaceId])
 
   return (
-    <>
-      <h1 className="text-2xl font-bold text-center">
-        This is the space page for {spaceId}
-      </h1>
-      <br />
-      <hr />
-      <br />
-      <form>
-        <input
-          type="text"
-          name="message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <input
-          type="text"
-          name="room"
-          value={room}
-          onChange={(e) => setRoom(e.target.value)}
-        />
-        <Button onClick={handleSend}>send</Button>
-      </form>
-      <div className="flex flex-col items-center">
-        <h2 className="text-xl font-semibold">Messages</h2>
-        {/* render the messages in white color  */}
-        <ul className="list-disc">
-          {messages.map((message, index) => (
-            <li key={index} className="text-white">
-              {message}
-            </li>
-          ))}
-        </ul>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 font-mono">
+      {/* Header */}
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Music className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Space: {spaceId}</h1>
+              <p className="text-muted-foreground">Share music with friends</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </>
+
+      {/* Main Content - Side by Side Layout */}
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Spotify Input */}
+          <div className="flex flex-col justify-start">
+            <SpotifyInput onTrackChange={handleTrackChange} />
+          </div>
+
+          {/* Right Column - Spotify Embed */}
+          <div className="flex flex-col justify-start">
+            <SpotifyEmbed currentTrack={currentTrack} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

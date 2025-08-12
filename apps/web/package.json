@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/axios": "^0.14.4",
     "@workspace/ui": "workspace:*",
     "axios": "^1.10.0",
     "better-auth": "^1.2.12",
@@ -27,9 +28,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@workspace/db": "workspace:^*",
     "@workspace/eslint-config": "workspace:^",
     "@workspace/typescript-config": "workspace:*",
-    "@workspace/db": "workspace:^*",
     "typescript": "^5.7.3"
   }
 }
