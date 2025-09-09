@@ -172,7 +172,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\naseem\\Desktop\\projects\\muzi\\packages\\db\\generated\\client",
+      "value": "C:\\Users\\LENOVO\\Desktop\\projects\\muzi\\packages\\db\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -186,7 +186,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\naseem\\Desktop\\projects\\muzi\\packages\\db\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\LENOVO\\Desktop\\projects\\muzi\\packages\\db\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 
 export const auth = betterAuth({
   logger: {
-    level: "debug", // Set to "info" or "error" in production
+    level: "debug", 
   },
   user: {
     additionalFields: {
@@ -40,7 +40,14 @@ export const auth = betterAuth({
 
       const context = ctx.context;
 
+      
       const { internalAdapter, newSession} = context;
+
+
+      if(!ctx.path.startsWith('/get-session')) {
+        console.log('path is', ctx.path);
+        console.log('context is', context);
+      }
 
       if (newSession && ctx.path.startsWith("/callback")) {
 
@@ -56,6 +63,8 @@ export const auth = betterAuth({
           }
 
           const isPremium = await checkPremium(accessToken);
+
+          console.log("User premium status:", isPremium);
 
           console.log("Updating user plan in session to:", isPremium ? "premium" : "free");
           await internalAdapter.updateUser(newSession.user.id, {

@@ -1,6 +1,9 @@
 import axios from 'axios';
 
 export async function checkPremium(accessToken: string): Promise<boolean> {
+
+  console.log("Checking premium status");
+  
   try {
     const response = await axios.get("https://api.spotify.com/v1/me", {
       headers: {
