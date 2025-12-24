@@ -11,16 +11,18 @@ export async function middleware(request: NextRequest) {
 
 //   const { pathname } = request.nextUrl;
 
-//     if (pathname.startsWith('/api/auth')) {
+//   console.log("Middleware - Pathname:", pathname);
+
+//   if (pathname.startsWith('/api/auth')) {
 //     return NextResponse.next();
 //   }
 
-//   // redirect to room if user is authenticated and tries to access signin page
+// // redirect to room if user is authenticated and tries to access signin page
 //   if (pathname === "/signin" && session) {
 //     return NextResponse.redirect(new URL("/room", request.url));
 //   }
 
-//   // Check if the current path starts with any protected route
+// // Check if the current path starts with any protected route
 //   const isProtectedRoute = protectedRoutes.some((route) =>
 //     pathname.startsWith(route)
 //   );

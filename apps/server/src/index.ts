@@ -28,6 +28,6 @@ app.get("/join", (req, res) => {
 
 initializeSocketServer();
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, "0.0.0.0",  () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

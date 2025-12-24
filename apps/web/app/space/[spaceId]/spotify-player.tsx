@@ -64,7 +64,7 @@ export function SpotifyInput({ onTrackChange }: SpotifyInputProps) {
                         disabled={!isValidUrl}
                         className="shrink-0"
                     >
-                        Load Track
+                        Add +
                     </Button>
                 </div>
                 {spotifyUrl && !isValidUrl && (
@@ -77,7 +77,7 @@ export function SpotifyInput({ onTrackChange }: SpotifyInputProps) {
                 {spotifyUrl && isValidUrl && (
                     <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                         <p className="text-sm text-green-700 dark:text-green-400">
-                            ✅ Valid Spotify URL! Click "Load Track" to play.
+                            ✅ Valid Spotify URL! Click "Add +" to play.
                         </p>
                     </div>
                 )}

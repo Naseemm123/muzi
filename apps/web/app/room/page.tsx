@@ -1,13 +1,21 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { RoomForm } from "./room-form";
+import { redirect } from "next/navigation";
 
 export default async function Room() {
 
 
+  console.log("Fetching session in Room page");
+
   const session = await auth.api.getSession({
     headers: await headers() 
   });
+
+  if(!session){
+      console.log("No session found, redirecting to /signin");
+      redirect('/signin');
+  }
 
   console.log("session", session); 
 

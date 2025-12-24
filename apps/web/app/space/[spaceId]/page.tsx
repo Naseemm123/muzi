@@ -1,16 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { io, Socket } from "socket.io-client";  
 import { useParams } from "next/navigation";
-import { Music } from "lucide-react";
+// import { Music } from "lucide-react";
 import { SpotifyInput, SpotifyEmbed } from "./spotify-player";
+import { getSession, useSession } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
 
 export default function Space() {
   const params = useParams();
   const spaceId = params.spaceId as string;
   const [currentTrack, setCurrentTrack] = useState({ url: "", embedUrl: "" });
   const socketRef = useRef<Socket | null>(null)
+
+
+  const session =  useSession();
+
+  if(!session.data){
+      redirect('/signin');
+  }
 
   const handleTrackChange = (url: string, embedUrl: string) => {
     setCurrentTrack({ url, embedUrl });
@@ -48,7 +57,7 @@ export default function Space() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <Music className="w-5 h-5 text-primary" />
+              {/* <Music className="w-5 h-5 text-primary" /> */}
             </div>
             <div>
               <h1 className="text-2xl font-bold">Space: {spaceId}</h1>
@@ -58,8 +67,9 @@ export default function Space() {
         </div>
       </div>
 
-      {/* Main Content - Side by Side Layout */}
+
       <div className="max-w-7xl mx-auto">
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Spotify Input */}
           <div className="flex flex-col justify-start">
@@ -71,6 +81,7 @@ export default function Space() {
             <SpotifyEmbed currentTrack={currentTrack} />
           </div>
         </div>
+
       </div>
     </div>
   );
