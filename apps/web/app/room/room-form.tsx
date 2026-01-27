@@ -33,14 +33,14 @@ export function RoomForm({ session }: RoomFormProps) {
         <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
           <Music className="w-6 h-6 text-primary" />
         </div>
-        
+
         <div className="space-y-2">
           <CardTitle className="text-2xl font-bold">
             {mode === "join" ? "Join Room" : "Create Room"}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {mode === "join" 
-              ? "Enter a room code to join an existing session" 
+            {mode === "join"
+              ? "Enter a room code to join an existing session"
               : "Create a new room and invite others"
             }
           </CardDescription>
@@ -97,9 +97,9 @@ export function RoomForm({ session }: RoomFormProps) {
                 required
               />
             </div>
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full group"
               disabled={isPending || !roomCode.trim()}
             >
@@ -118,6 +118,7 @@ export function RoomForm({ session }: RoomFormProps) {
           </form>
         ) : (
           <form action={createAction} className="space-y-4">
+            <input type="hidden" name="adminId" value={session?.user?.id ?? ""} />
             <div className="space-y-2">
               <label htmlFor="roomName" className="text-sm font-medium text-foreground">
                 Room Name
@@ -135,11 +136,11 @@ export function RoomForm({ session }: RoomFormProps) {
                 required
               />
             </div>
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full group"
-              disabled={isPending || !roomName.trim()}
+              disabled={isPending || !roomName.trim() || !session?.user?.id}
             >
               {isCreatingPending ? (
                 <>

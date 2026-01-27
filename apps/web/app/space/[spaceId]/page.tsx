@@ -1,29 +1,63 @@
 "use client";
 
 import { useState, useEffect, useRef, use } from "react";
-import { io, Socket } from "socket.io-client";  
+import { io, Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
 // import { Music } from "lucide-react";
-import { SpotifyInput, SpotifyEmbed } from "./spotify-player";
+import { SpotifyInput, SpotifyEmbed, QueueList } from "./spotify-player";
 import { getSession, useSession } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
+import { QueueItem, fetchSpotifyTrackMetadata } from "@/utils/utils";
 
 export default function Space() {
   const params = useParams();
-  const spaceId = params.spaceId as string;
+  const spaceId = params.spaceId as String;
   const [currentTrack, setCurrentTrack] = useState({ url: "", embedUrl: "" });
+  const [queue, setQueue] = useState<Array<QueueItem>>([]);
   const socketRef = useRef<Socket | null>(null)
 
 
-  const session =  useSession();
+  const handleAddQueue = async (url: string, embedUrl: string) => {
 
-  if(!session.data){
-      redirect('/signin');
+    try {
+
+      // TODO: move metadata fetching to server side to avoid exposing access token in client;
+
+      const metadata = await fetchSpotifyTrackMetadata(url);
+
+      console.log("Fetched metadata for queue item:", metadata);
+
+      const queueItem: QueueItem = {
+        url,
+        name: metadata?.name || url,
+        imageUrl: metadata?.imageUrl,
+        artists: metadata?.artists,
+      };
+
+      setQueue((prevQueue) => [...prevQueue, queueItem]);
+
+      // Emit add to queue event to server, send the whole queue item
+      if (socketRef.current) {
+        socketRef.current.emit("addToQueue", { queueItem, spaceId });
+      }
+    }
+    catch (error) {
+      console.error("Error adding to queue:", error);
+    }
+    // Fetch track metadata from Spotify API
+
+    // TODO : set the current track to next song in queue when current track ends and emit event to server
+  }
+
+  const session = useSession();
+
+  if (!session.data) {
+    redirect('/signin');
   }
 
   const handleTrackChange = (url: string, embedUrl: string) => {
     setCurrentTrack({ url, embedUrl });
-    
+
     // Emit track change event to server
     if (socketRef.current) {
       socketRef.current.emit("trackChange", { url, embedUrl, spaceId });
@@ -37,16 +71,31 @@ export default function Space() {
     console.log('Initializing WebSocket connection for space:', spaceId);
 
     const socket = io("http://127.0.0.1:3001")
-    
+
     socketRef.current = socket;
 
     socket.on("connect", () => console.log("Connected to WebSocket server"));
 
-    socket.on("connect_error", (err) => console.error("Connection error:", err) )
+    socket.on("connect_error", (err) => console.error("Connection error:", err))
 
-    socket.emit("joinSpace", { spaceId });
+    socket.emit("joinSpace", { spaceId, userId: session.data?.user?.id });
 
-    socket.on("trackUpdate", ({ url, embedUrl }) => setCurrentTrack({ url, embedUrl }));
+    socket.on("initialSync", async ({ currentTrack, queue: initialQueue }: { currentTrack: any, queue: Array<QueueItem> }) => {
+      setCurrentTrack(currentTrack);
+      setQueue(initialQueue);
+      console.log("Received initial sync:", { currentTrack, initialQueue });
+    })
+
+    socket.on("trackUpdate", ({ url, embedUrl }: { url: string, embedUrl: string }) => {
+      console.log("Received track update:", { url, embedUrl });
+      setCurrentTrack({ url, embedUrl });
+    });
+
+    socket.on("queueUpdated", async (updatedQueue: Array<QueueItem>) => {
+      console.log("Received queue update:", updatedQueue);
+
+      setQueue(updatedQueue);
+    });
 
   }, [spaceId])
 
@@ -73,7 +122,8 @@ export default function Space() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Spotify Input */}
           <div className="flex flex-col justify-start">
-            <SpotifyInput onTrackChange={handleTrackChange} />
+            <SpotifyInput onTrackChange={handleAddQueue} />
+            <QueueList queue={queue} />
           </div>
 
           {/* Right Column - Spotify Embed */}
