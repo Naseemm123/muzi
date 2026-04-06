@@ -6,7 +6,7 @@ import { Server } from "socket.io";
 
 export function initializeSocketServer() {
   const io = new Server(httpServer, {
-    cors: { origin: "http://127.0.0.1:3000" },
+    cors: { origin: "http://localhost:3000" },
   });
 
 
@@ -19,6 +19,7 @@ export function initializeSocketServer() {
     socket.on("joinSpace", async ({ spaceId, userId }: { spaceId: string, userId: string }) => {
       socket.join(spaceId);
 
+      // fetch the current track using zrange and current queue using hgetall and emit to the client for initial sync
       const currentTrack = await redisClient.hgetall(`space:${spaceId}:currentTrack`);
       const currentQueue = await redisClient.zrange(`space:${spaceId}:queue`, 0, -1);
 
@@ -65,7 +66,12 @@ export function initializeSocketServer() {
 
 
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (spaceId) => {
+      // if room is empty after client disconnect, clear the current track and queue from redis to save memory
+      if(socket.rooms.size === 0) {
+        redisClient.del(`space:${spaceId}:currentTrack`);
+        redisClient.del(`space:${spaceId}:queue`);
+      }
       console.log(`Client disconnected: ${socket.id}`);
     });
 
@@ -75,10 +81,11 @@ export function initializeSocketServer() {
     socket.on("addToQueue", async ({ queueItem, spaceId }) => {
       console.log(`Adding track to queue in space ${spaceId}:`, queueItem);
 
-      // add track to sorted set in redis with score as timestamp
-      await redisClient.zadd(`space:${spaceId}:queue`, Date.now(), JSON.stringify(queueItem));
+      // add track to sorted set in redis with score as 0 for now
+      // TODO: set the score as the no of votes for each track and sort the queue based on score before emitting to clients
+      await redisClient.zadd(`space:${spaceId}:queue`, 0, JSON.stringify(queueItem));
 
-      // broadcast the updated queue to all clients in the space 
+      // fetch updated and sorted queue from redis
       const updatedQueue = await redisClient.zrange(`space:${spaceId}:queue`, 0, -1);
 
       // Parse and broadcast

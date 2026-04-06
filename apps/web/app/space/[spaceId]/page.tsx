@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, use } from "react";
 import { io, Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
 // import { Music } from "lucide-react";
-import { SpotifyInput, SpotifyEmbed, QueueList } from "./spotify-player";
+import { YoutubeInput, YoutubeEmbed, QueueList } from "./youtube-player";
 import { getSession, useSession } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
-import { QueueItem, fetchSpotifyTrackMetadata } from "@/utils/utils";
+import { QueueItem, fetchYoutubeTrackMetadata } from "@/utils/utils";
 
 export default function Space() {
   const params = useParams();
@@ -16,16 +16,13 @@ export default function Space() {
   const [queue, setQueue] = useState<Array<QueueItem>>([]);
   const socketRef = useRef<Socket | null>(null)
 
-
-  const handleAddQueue = async (url: string, embedUrl: string) => {
-
+  const handleAddQueue = async (url: string) => {
+    
     try {
-
       // TODO: move metadata fetching to server side to avoid exposing access token in client;
+      const metadata = await fetchYoutubeTrackMetadata(url);
 
-      const metadata = await fetchSpotifyTrackMetadata(url);
-
-      console.log("Fetched metadata for queue item:", metadata);
+      console.log("Fetched metadata:", metadata);
 
       const queueItem: QueueItem = {
         url,
@@ -44,7 +41,7 @@ export default function Space() {
     catch (error) {
       console.error("Error adding to queue:", error);
     }
-    // Fetch track metadata from Spotify API
+    // Fetch track metadata from YouTube API
 
     // TODO : set the current track to next song in queue when current track ends and emit event to server
   }
@@ -70,7 +67,7 @@ export default function Space() {
 
     console.log('Initializing WebSocket connection for space:', spaceId);
 
-    const socket = io("http://127.0.0.1:3001")
+    const socket = io("http://localhost:3001")
 
     socketRef.current = socket;
 
@@ -120,15 +117,15 @@ export default function Space() {
       <div className="max-w-7xl mx-auto">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Spotify Input */}
+          {/* Left Column - Youtube Input */}
           <div className="flex flex-col justify-start">
-            <SpotifyInput onTrackChange={handleAddQueue} />
+            <YoutubeInput handleAddQueue={handleAddQueue} />
             <QueueList queue={queue} />
           </div>
 
-          {/* Right Column - Spotify Embed */}
+          {/* Right Column - Youtube Embed */}
           <div className="flex flex-col justify-start">
-            <SpotifyEmbed currentTrack={currentTrack} />
+            <YoutubeEmbed currentTrack={currentTrack} />
           </div>
         </div>
 

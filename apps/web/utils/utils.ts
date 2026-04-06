@@ -1,31 +1,8 @@
 import axios from 'axios';
 import { getAccessToken } from '@/lib/auth-client';
 
-export async function checkPremium(accessToken: string): Promise<boolean> {
-
-  console.log("Checking premium status");
-  
-  try {
-    const response = await axios.get("https://api.spotify.com/v1/me", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    console.log("Response from Spotify API:", response);
-
-    const data = response.data;
-    
-    return data.product === "premium";
-
-  } catch (error) {
-    console.error("Error checking premium status:", error);
-    return false;
-  }
-}
-
 // ===== Shared Spotify Types =====
-export interface SpotifyTrack {
+export interface YoutubeVideo {
   id: string;
   name: string;
   imageUrl?: string;
@@ -39,52 +16,60 @@ export interface QueueItem {
   artists?: string[];
 }
 
-// ===== Shared Spotify Helpers =====
-export function extractTrackId(url: string): string | null {
-  const match = url.match(/track\/([a-zA-Z0-9]+)/);
+export function extractVideoId(url: string): string | null { 
+  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
   return match && match[1] ? match[1] : null;
 }
 
+// convert to youtube embed url -> format : https://www.youtube.com/embed/{videoId}
 export function convertToEmbedUrl(url: string): string {
-  const trackId = extractTrackId(url);
-  return trackId
-    ? `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&view=list&t=0`
+  const videoId = extractVideoId(url);
+  return videoId
+    ? `https://www.youtube.com/embed/${videoId}`
     : "";
 }
 
-export async function fetchSpotifyTrackMetadata(
+// TODO : move this to backend to avoid exposing access token in client
+export async function fetchYoutubeTrackMetadata(
   trackUrl: string,
-): Promise<SpotifyTrack | null> {
+): Promise<YoutubeVideo | null> {
   try {
-    const trackId = extractTrackId(trackUrl);
-
-    console.log("song track id : ", trackId);
-
-    const accessToken = await getAccessToken({
-      providerId: "spotify",
-    });
-
-    console.log("Fetched access token for Spotify API:", accessToken);
+    const trackId = extractVideoId(trackUrl);
 
     if (!trackId) return null;
 
-    const response = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+
+    // get the access token for google provider to fetch youtube metadata
+    const token = await getAccessToken({
+      providerId: "google",
+    })
+
+    const accessToken = token.data?.accessToken;
+
+    console.log("Access token for YouTube API:", accessToken);
+
+    const response = await axios.get(`https://www.googleapis.com/youtube/v3/videos?id=${trackId}&part=snippet,contentDetails`, {
       headers: {
-        Authorization: `Bearer ${accessToken.data?.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
-    const data = response.data;
+    const video = response.data?.items?.[0];
+    if (!video) return null;
 
     return {
-      id: data.id,
-      name: data.name,
-      imageUrl: data.album?.images?.[0]?.url,
-      artists: data.artists?.map((artist: any) => artist.name) || [],
+      id: video.id,
+      name: video.snippet?.title,
+      imageUrl: video.snippet?.thumbnails?.default?.url,
+      artists: video.snippet?.channelTitle ? [video.snippet.channelTitle] : [],
     };
 
   } catch (error) {
-    console.error("Error fetching Spotify track metadata:", error);
+    if (axios.isAxiosError(error)) {
+      console.error("AxiosError fetching YouTube track metadata:", error.response?.status, error.response?.data);
+    } else {
+      console.error("Error fetching YouTube track metadata:", error);
+    }
     return null;
   }
 }

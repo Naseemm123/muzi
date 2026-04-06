@@ -10,13 +10,13 @@ const app = express();
 export const httpServer = createServer(app);
 
 export const redisClient = new Redis({
-  host: "127.0.0.1",
+  host: "localhost",
   port: 6379,
 });
 
 app.use(
   cors({
-    origin: "http://127.0.0.1:3000",
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
   }),

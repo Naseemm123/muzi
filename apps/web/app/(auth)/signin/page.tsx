@@ -2,9 +2,6 @@
 
 import { Button } from "@workspace/ui/components/button";
 import { signIn } from "@/lib/auth-client";
-import { createAuthClient } from "better-auth/react";
-// import { checkPremium } from "@/utils/utils";
-import { getSession } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 
@@ -25,19 +22,7 @@ export default function SignInPage() {
 
     await signIn.social(
       {
-        provider: "spotify",
-        callbackURL: "/room",
-      }
-    )
-
-  }
-
-  async function handeSignIn2(event: React.MouseEvent<HTMLButtonElement>) {
-    event?.preventDefault()
-
-    await signIn.social(
-      {
-        provider: "github",
+        provider: "google",
         callbackURL: "/room",
       }
     )
@@ -50,10 +35,7 @@ export default function SignInPage() {
       <div className="flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold">Sign In</h1>
           <Button onClick={handeSignIn} type="submit" className="btn btn-primary">
-            Sign in with Spotify
-          </Button>
-          <Button onClick={handeSignIn2} type="submit" className="btn btn-primary">
-            Sign in with Github
+            Sign in with Google
           </Button>
       </div>
     </div>

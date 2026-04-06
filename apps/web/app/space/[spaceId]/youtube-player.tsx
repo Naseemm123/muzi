@@ -4,30 +4,30 @@ import { useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@workspace/ui/components/card";
-import { Music, ExternalLink } from "lucide-react";
+import { Music } from "lucide-react";
 import { convertToEmbedUrl } from "@/utils/utils";
 
-interface SpotifyInputProps {
-    onTrackChange: (url: string, embedUrl: string) => void;
+interface YoutubeInputProps {
+    handleAddQueue: (url: string) => void;
 }
 
-export function SpotifyInput({ onTrackChange }: SpotifyInputProps) {
-    const [spotifyUrl, setSpotifyUrl] = useState("");
+export function YoutubeInput({ handleAddQueue }: YoutubeInputProps) {
+    const [youtubeUrl, setYoutubeUrl] = useState("");
     const [isValidUrl, setIsValidUrl] = useState(false);
 
-    // Handle Spotify URL input
-    function handleSpotifyUrlInput(url: string) {
-        setSpotifyUrl(url);
+    // Handle Youtube URL input
+    function handleYoutubeUrlInput(url: string) {
+        setYoutubeUrl(url);
         const isValid = !!convertToEmbedUrl(url);
         setIsValidUrl(isValid);
     };
 
     // Handle load embed button click
     function handleLoadEmbed() {
-        const embed = convertToEmbedUrl(spotifyUrl);
-        setSpotifyUrl("")
+        const embed = convertToEmbedUrl(youtubeUrl);
+        setYoutubeUrl("")
         if (embed) {
-            onTrackChange(spotifyUrl, embed);
+            handleAddQueue(youtubeUrl);
         }
     };
 
@@ -36,15 +36,15 @@ export function SpotifyInput({ onTrackChange }: SpotifyInputProps) {
             <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                     <Music className="w-5 h-5" />
-                    <span>Add Spotify Track</span>
+                    <span>Add Youtube Video</span>
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex space-x-2">
                     <Input
-                        placeholder="Paste Spotify URL here..."
-                        value={spotifyUrl}
-                        onChange={(e) => handleSpotifyUrlInput(e.target.value)}
+                        placeholder="Paste Youtube URL here..."
+                        value={youtubeUrl}
+                        onChange={(e) => handleYoutubeUrlInput(e.target.value)}
                         className="flex-1"
                     />
                     <Button
@@ -55,17 +55,17 @@ export function SpotifyInput({ onTrackChange }: SpotifyInputProps) {
                         Add +
                     </Button>
                 </div>
-                {spotifyUrl && !isValidUrl && (
+                {youtubeUrl && !isValidUrl && (
                     <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                         <p className="text-sm text-destructive">
-                            Invalid Spotify URL. Please paste a valid Spotify track URL.
+                            Invalid Youtube URL. Please paste a valid Youtube video URL.
                         </p>
                     </div>
                 )}
-                {spotifyUrl && isValidUrl && (
+                {youtubeUrl && isValidUrl && (
                     <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                         <p className="text-sm text-green-700 dark:text-green-400">
-                            ✅ Valid Spotify URL! Click "Add +" to add to queue.
+                            ✅ Valid Youtube URL! Click "Add +" to add to queue.
                         </p>
                     </div>
                 )}
@@ -74,7 +74,8 @@ export function SpotifyInput({ onTrackChange }: SpotifyInputProps) {
     );
 }
 
-export function SpotifyEmbed({ currentTrack }: {
+// TODO : make this to server component
+export function YoutubeEmbed({ currentTrack }: {
     currentTrack: {
         url: string;
         embedUrl: string;
@@ -124,7 +125,7 @@ export function SpotifyEmbed({ currentTrack }: {
                         </div>
                         <h3 className="font-semibold text-lg mb-2">No Track Selected</h3>
                         <p className="text-muted-foreground text-sm">
-                            Paste a Spotify URL to start playing music
+                            Paste a Youtube URL to start playing music
                         </p>
                     </CardContent>
                 </Card>
@@ -137,6 +138,7 @@ interface QueueListProps {
     queue: Array<{ url: string; name?: string; imageUrl?: string; artists?: string[] }>;
 }
 
+// TODO : make this to server component
 export function QueueList({ queue }: QueueListProps) {
     return (
         <Card className="backdrop-blur-sm bg-card/80 border-border/50 h-fit">
