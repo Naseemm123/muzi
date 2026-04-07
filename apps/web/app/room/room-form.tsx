@@ -22,8 +22,10 @@ export function RoomForm({ session }: RoomFormProps) {
   const [roomCode, setRoomCode] = useState("");
   const [roomName, setRoomName] = useState("");
 
-  const [joinState, joinAction, isJoiningPending] = useActionState(() => router.push(`/space/${roomCode}`), null);
-  const [createState, createAction, isCreatingPending] = useActionState(() => router.push(`/space/${roomName}`), null);
+
+  // TODO: check if room already exists from backend, if yes join, else create the room and join as admin
+  const [joinState, joinAction, isJoiningPending] = useActionState(() => router.push(`/space/${roomCode}?intent=join`), null);
+  const [createState, createAction, isCreatingPending] = useActionState(() => router.push(`/space/${roomName}?intent=create`), null);
 
   const isPending = isJoiningPending || isCreatingPending;
 

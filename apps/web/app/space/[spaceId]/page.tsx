@@ -1,28 +1,53 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useEffect, useRef, useState } from "react";
+import { redirect, useParams, useSearchParams } from "next/navigation";
 import { io, Socket } from "socket.io-client";
-import { useParams } from "next/navigation";
-// import { Music } from "lucide-react";
-import { YoutubeInput, YoutubeEmbed, QueueList } from "./youtube-player";
-import { getSession, useSession } from "@/lib/auth-client";
-import { redirect } from "next/navigation";
-import { QueueItem, fetchYoutubeTrackMetadata } from "@/utils/utils";
+import { useSession } from "@/lib/auth-client";
+import { fetchYoutubeTrackMetadata, QueueItem } from "@/utils/utils";
+import { QueueList, YoutubeEmbed, YoutubeInput } from "./youtube-player";
+import type { AdminPlaybackSnapshot, CurrentTrack } from "./player-types";
+
+interface InitialSyncPayload {
+  currentTrack: CurrentTrack;
+  queue: Array<QueueItem>;
+  isAdmin?: boolean;
+  playbackState?: AdminPlaybackSnapshot | null;
+}
+
 
 export default function Space() {
-  const params = useParams();
-  const spaceId = params.spaceId as String;
-  const [currentTrack, setCurrentTrack] = useState({ url: "", embedUrl: "" });
-  const [queue, setQueue] = useState<Array<QueueItem>>([]);
-  const socketRef = useRef<Socket | null>(null)
+  const { spaceId } = useParams<{ spaceId: string }>();
+  const searchParams = useSearchParams();
+  const intent = searchParams.get("intent") === "create" ? "create" : "join";
 
-  const handleAddQueue = async (url: string) => {
-    
+  const session = useSession();
+  const userId = session.data?.user?.id ?? "";
+
+  const [currentTrack, setCurrentTrack] = useState<CurrentTrack>({ url: "", embedUrl: "" });
+  const [queue, setQueue] = useState<Array<QueueItem>>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [playBackState, setPlayBackState] = useState<AdminPlaybackSnapshot | null>(null);
+
+  const socketRef = useRef<Socket | null>(null);
+
+  if (!session.data) {
+    redirect("/signin");
+  }
+
+  function emitTrackChange(url: string, embedUrl: string) {
+    setCurrentTrack({ url, embedUrl });
+    socketRef.current?.emit("trackChange", { spaceId, url, embedUrl });
+  }
+
+  async function handleAddQueue(url: string, embedUrl: string) {
     try {
-      // TODO: move metadata fetching to server side to avoid exposing access token in client;
       const metadata = await fetchYoutubeTrackMetadata(url);
 
-      console.log("Fetched metadata:", metadata);
+      if (!currentTrack.url && queue.length === 0) {
+        emitTrackChange(url, embedUrl);
+        return;
+      }
 
       const queueItem: QueueItem = {
         url,
@@ -32,79 +57,60 @@ export default function Space() {
       };
 
       setQueue((prevQueue) => [...prevQueue, queueItem]);
-
-      // Emit add to queue event to server, send the whole queue item
-      if (socketRef.current) {
-        socketRef.current.emit("addToQueue", { queueItem, spaceId });
-      }
-    }
-    catch (error) {
+      socketRef.current?.emit("addToQueue", { spaceId, queueItem });
+    } catch (error) {
       console.error("Error adding to queue:", error);
     }
-    // Fetch track metadata from YouTube API
-
-    // TODO : set the current track to next song in queue when current track ends and emit event to server
   }
-
-  const session = useSession();
-
-  if (!session.data) {
-    redirect('/signin');
-  }
-
-  const handleTrackChange = (url: string, embedUrl: string) => {
-    setCurrentTrack({ url, embedUrl });
-
-    // Emit track change event to server
-    if (socketRef.current) {
-      socketRef.current.emit("trackChange", { url, embedUrl, spaceId });
-    }
-  };
-
-  // intialize websocket connection here 
 
   useEffect(() => {
-
-    console.log('Initializing WebSocket connection for space:', spaceId);
-
-    const socket = io("http://localhost:3001")
-
+    const socket = io("http://localhost:3001");
     socketRef.current = socket;
 
     socket.on("connect", () => console.log("Connected to WebSocket server"));
-
-    socket.on("connect_error", (err) => console.error("Connection error:", err))
-
-    socket.emit("joinSpace", { spaceId, userId: session.data?.user?.id });
-
-    socket.on("initialSync", async ({ currentTrack, queue: initialQueue }: { currentTrack: any, queue: Array<QueueItem> }) => {
-      setCurrentTrack(currentTrack);
-      setQueue(initialQueue);
-      console.log("Received initial sync:", { currentTrack, initialQueue });
-    })
-
-    socket.on("trackUpdate", ({ url, embedUrl }: { url: string, embedUrl: string }) => {
-      console.log("Received track update:", { url, embedUrl });
-      setCurrentTrack({ url, embedUrl });
+    socket.on("connect_error", (error) => console.error("Connection error:", error));
+    // if user tries to join space without userId, show error
+    socket.on("spaceJoinError", ({ code, message }: { code: string; message: string }) => {
+      console.error("Failed to join space:", { code, message });
     });
 
-    socket.on("queueUpdated", async (updatedQueue: Array<QueueItem>) => {
-      console.log("Received queue update:", updatedQueue);
+    socket.on("initialSync", (payload: InitialSyncPayload) => {
+      setCurrentTrack(payload.currentTrack);
+      setQueue(payload.queue);
+      setIsAdmin(Boolean(payload.isAdmin));
+      setPlayBackState(payload.playbackState ?? null);
+    });
 
+    socket.on("trackUpdate", ({ url, embedUrl }: CurrentTrack) => {
+      setCurrentTrack({ url, embedUrl });
+      setPlayBackState(null);
+    });
+
+    socket.on("queueUpdated", (updatedQueue: Array<QueueItem>) => {
       setQueue(updatedQueue);
     });
 
-  }, [spaceId])
+    socket.on("adminPlaybackStateUpdate", (playbackState: AdminPlaybackSnapshot | null) => {
+      setPlayBackState(playbackState);
+    });
+
+    socket.on("adminPlaybackSnapshot", (playbackState: AdminPlaybackSnapshot | null) => {
+      setPlayBackState(playbackState);
+    });
+
+    socket.emit("joinSpace", { spaceId, userId, intent });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [intent, spaceId, userId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 font-mono">
-      {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              {/* <Music className="w-5 h-5 text-primary" /> */}
-            </div>
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center" />
             <div>
               <h1 className="text-2xl font-bold">Space: {spaceId}</h1>
               <p className="text-muted-foreground">Share music with friends</p>
@@ -113,22 +119,24 @@ export default function Space() {
         </div>
       </div>
 
-
       <div className="max-w-7xl mx-auto">
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Youtube Input */}
           <div className="flex flex-col justify-start">
             <YoutubeInput handleAddQueue={handleAddQueue} />
             <QueueList queue={queue} />
           </div>
 
-          {/* Right Column - Youtube Embed */}
           <div className="flex flex-col justify-start">
-            <YoutubeEmbed currentTrack={currentTrack} />
+            <YoutubeEmbed
+              currentTrack={currentTrack}
+              socket={socketRef.current}
+              spaceId={spaceId}
+              userId={userId}
+              isAdmin={isAdmin}
+              playBackState={playBackState}
+            />
           </div>
         </div>
-
       </div>
     </div>
   );

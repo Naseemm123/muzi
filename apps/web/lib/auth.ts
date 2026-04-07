@@ -19,7 +19,6 @@ export const auth = betterAuth({
             redirectUri: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`,
             // scope: ["https://www.googleapis.com/auth/youtube.readonly"],
             scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/youtube.readonly"],
-            prompt: "consent",
         },
     }
 });
