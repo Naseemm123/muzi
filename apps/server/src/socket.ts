@@ -1,161 +1,16 @@
 import { Server } from "socket.io";
 import { httpServer, redisClient } from "./index";
-
-type PlayerStateName = "UNSTARTED" | "ENDED" | "PLAYING" | "PAUSED" | "BUFFERING" | "CUED";
-
-interface JoinSpacePayload {
-  spaceId: string;
-  userId: string;
-  intent?: "join" | "create";
-}
-
-interface TrackChangePayload {
-  spaceId: string;
-  url: string;
-  embedUrl: string;
-}
-
-interface QueueItem {
-  url: string;
-  name?: string;
-  imageUrl?: string;
-  artists?: string[];
-}
-
-interface PlayerEventPayload {
-  spaceId: string;
-  userId: string;
-  videoId: string;
-  playerState: PlayerStateName;
-  currentTime: number;
-  occurredAtMs: number;
-  playbackRate: number;
-  errorCode?: number;
-}
-
-interface PlaybackSnapshot {
-  videoId: string;
-  playerState: PlayerStateName;
-  currentTime: number;
-  occurredAtMs: number;
-  playbackRate: number;
-}
-
-interface SnapshotRequestPayload {
-  spaceId: string;
-  videoId: string;
-}
-
-const redisKeys = {
-  admin: (spaceId: string) => `space:${spaceId}:admin`,
-  currentTrack: (spaceId: string) => `space:${spaceId}:currentTrack`,
-  queue: (spaceId: string) => `space:${spaceId}:queue`,
-  playbackState: (spaceId: string) => `space:${spaceId}:playbackState`,
-};
-
-function parseNumber(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function parseQueueItems(items: string[]): unknown[] {
-  return items
-    .map((item) => {
-      try {
-        return JSON.parse(item) as QueueItem;
-      } catch (error) {
-        console.error("Failed to parse queue item:", item, error);
-        return null;
-      }
-    })
-    .filter((item): item is QueueItem => item !== null);
-}
-
-function parseStoredPlaybackState(payload: Record<string, string>): PlaybackSnapshot | null {
-  if (!payload.videoId || !payload.playerState) {
-    return null;
-  }
-
-  return {
-    videoId: payload.videoId,
-    playerState: payload.playerState as PlayerStateName,
-    currentTime: parseNumber(payload.currentTime, 0),
-    occurredAtMs: parseNumber(payload.occurredAtMs, Date.now()),
-    playbackRate: parseNumber(payload.playbackRate, 1),
-  };
-}
-
-function computePlaybackSnapshot(snapshot: PlaybackSnapshot): PlaybackSnapshot {
-  if (snapshot.playerState !== "PLAYING") {
-    return snapshot;
-  }
-
-  const now = Date.now();
-  const elapsedSeconds = Math.max(0, (now - snapshot.occurredAtMs) / 1000);
-
-  return {
-    ...snapshot,
-    currentTime: snapshot.currentTime + elapsedSeconds * snapshot.playbackRate,
-    occurredAtMs: now,
-  };
-}
-
-async function clearSpaceData(spaceId: string) {
-  await redisClient.del(redisKeys.currentTrack(spaceId));
-  await redisClient.del(redisKeys.queue(spaceId));
-  await redisClient.del(redisKeys.admin(spaceId));
-  await redisClient.del(redisKeys.playbackState(spaceId));
-}
-
-function extractVideoId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
-  return match?.[1] ?? null;
-}
-
-function convertToEmbedUrl(url: string): string {
-  const videoId = extractVideoId(url);
-  return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
-}
-
-async function advanceToNextTrack(spaceId: string, io: Server) {
-  const queueKey = redisKeys.queue(spaceId);
-  const nextQueueMember = await redisClient.zrange(queueKey, 0, 0);
-
-  if (!nextQueueMember || nextQueueMember.length === 0) {
-    await redisClient.hset(redisKeys.currentTrack(spaceId), { url: "", embedUrl: "" });
-    await redisClient.del(redisKeys.playbackState(spaceId));
-    io.to(spaceId).emit("trackUpdate", { url: "", embedUrl: "" });
-    io.to(spaceId).emit("queueUpdated", []);
-    return;
-  }
-
-  const nextMember = nextQueueMember[0];
-  if (!nextMember) {
-    return;
-  }
-  await redisClient.zrem(queueKey, nextMember);
-
-  let nextTrack: QueueItem | null = null;
-  try {
-    nextTrack = JSON.parse(nextMember) as QueueItem;
-  } catch (error) {
-    console.error("Failed to parse next queue item:", nextMember, error);
-  }
-
-  if (!nextTrack?.url) {
-    const updatedQueueRaw = await redisClient.zrange(queueKey, 0, -1);
-    io.to(spaceId).emit("queueUpdated", parseQueueItems(updatedQueueRaw));
-    return;
-  }
-
-  const trackPayload = { url: nextTrack.url, embedUrl: convertToEmbedUrl(nextTrack.url) };
-  await redisClient.hset(redisKeys.currentTrack(spaceId), trackPayload);
-  await redisClient.del(redisKeys.playbackState(spaceId));
-
-  const updatedQueueRaw = await redisClient.zrange(queueKey, 0, -1);
-  io.to(spaceId).emit("trackUpdate", trackPayload);
-  io.to(spaceId).emit("queueUpdated", parseQueueItems(updatedQueueRaw));
-}
+import { computePlaybackSnapshot, parseQueueItems, parseStoredPlaybackState } from "./socket/parsers";
+import { redisKeys } from "./socket/redis-keys";
+import { advanceToNextTrack, clearSpaceData } from "./socket/space-state";
+import type {
+  JoinSpacePayload,
+  PlayerEventPayload,
+  PlaybackSnapshot,
+  SnapshotRequestPayload,
+  TrackChangePayload,
+} from "./socket/types";
+import { extractVideoId } from "./socket/youtube";
 
 export function initializeSocketServer() {
   const io = new Server(httpServer, {
@@ -163,10 +18,10 @@ export function initializeSocketServer() {
   });
 
   io.on("connection", (socket) => {
+
     socket.on("joinSpace", async ({ spaceId, userId, intent = "join" }: JoinSpacePayload) => {
       if (!userId) {
         socket.emit("spaceJoinError", {
-          code: "USER_ID_REQUIRED",
           message: "User id is required to join space",
         });
         return;
@@ -177,7 +32,6 @@ export function initializeSocketServer() {
 
       if (intent === "create" && existingAdminId) {
         socket.emit("spaceJoinError", {
-          code: "SPACE_ALREADY_EXISTS",
           message: "Space already exists. Join instead.",
         });
         return;
@@ -219,16 +73,23 @@ export function initializeSocketServer() {
       currentTime,
       occurredAtMs,
       playbackRate,
-      errorCode,
+      isSeeking,
     }: PlayerEventPayload) => {
-      if (!spaceId || !userId || !videoId) {
+
+      console.log("event from client", userId, playerState)
+
+      const adminId = await redisClient.get(redisKeys.admin(spaceId));
+      if (adminId !== userId) {
+        console.log("user is not admin, ignoring player event");
         return;
       }
 
-      const adminId = await redisClient.get(redisKeys.admin(spaceId));
-      if (!adminId || adminId !== userId) {
-        return;
+      if(isSeeking){
+        console.log("admin is seeking");
       }
+
+      const previousStatePayload = await redisClient.hgetall(redisKeys.playbackState(spaceId));
+      const previousState = parseStoredPlaybackState(previousStatePayload);
 
       const snapshot: PlaybackSnapshot = {
         videoId,
@@ -238,6 +99,8 @@ export function initializeSocketServer() {
         playbackRate: playbackRate || 1,
       };
 
+      console.log("Received player event from admin:", snapshot);
+
       await redisClient.hset(redisKeys.playbackState(spaceId), {
         videoId: snapshot.videoId,
         playerState: snapshot.playerState,
@@ -246,10 +109,17 @@ export function initializeSocketServer() {
         playbackRate: String(snapshot.playbackRate),
       });
 
-      io.to(spaceId).emit("adminPlaybackStateUpdate", snapshot);
+      const shouldBroadcast =
+           snapshot.playerState !== "PLAYING"
+        || previousState?.playerState !== "PLAYING"
+        || previousState?.videoId !== snapshot.videoId
+        || Boolean(isSeeking);
 
-      if (typeof errorCode === "number") {
-        console.error(`YouTube player error in space ${spaceId}:`, { errorCode, userId, videoId });
+      // Persist PLAYING heartbeats for snapshot accuracy, but avoid room-wide
+      // per-second broadcasts that cause unnecessary client updates/renders.
+      if (shouldBroadcast) {
+        console.log("broadcasting...........")
+        io.to(spaceId).emit("adminPlaybackStateUpdate", snapshot);
       }
 
       if (playerState === "ENDED") {
@@ -258,7 +128,7 @@ export function initializeSocketServer() {
 
         // Ignore stale ENDED callbacks from an old player instance.
         if (currentTrackVideoId && currentTrackVideoId === videoId) {
-          await advanceToNextTrack(spaceId, io);
+          await advanceToNextTrack(spaceId, io, redisClient);
         }
       }
     });
@@ -272,16 +142,16 @@ export function initializeSocketServer() {
       const snapshot = parseStoredPlaybackState(stored);
 
       if (!snapshot) {
-        socket.emit("adminPlaybackSnapshot", null);
+        socket.emit("RequestedadminPlaybackSnapshot", null);
         return;
       }
 
       if (videoId && snapshot.videoId !== videoId) {
-        socket.emit("adminPlaybackSnapshot", snapshot);
+        socket.emit("RequestedadminPlaybackSnapshot", snapshot);
         return;
       }
 
-      socket.emit("adminPlaybackSnapshot", computePlaybackSnapshot(snapshot));
+      socket.emit("RequestedadminPlaybackSnapshot", computePlaybackSnapshot(snapshot));
     });
 
     socket.on("upvoteTrack", ({ spaceId, trackId }) => {
@@ -302,7 +172,7 @@ export function initializeSocketServer() {
         const roomWillBeEmpty = !socketsInRoom || socketsInRoom.size <= 1;
 
         if (roomWillBeEmpty) {
-          await clearSpaceData(spaceId);
+          await clearSpaceData(spaceId, redisClient);
         }
       }
     });

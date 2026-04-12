@@ -1,23 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Music } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import { convertToEmbedUrl } from "@/utils/utils";
+import { convertToEmbedUrl, fetchYoutubeTrackMetadata } from "@/utils/utils";
+import { Socket } from "socket.io-client";
+import type { CurrentTrack } from "./player-types";
+import type { QueueItem } from "@/utils/utils";
 
-interface YoutubeInputProps {
-  handleAddQueue: (url: string, embedUrl: string) => void;
-}
 
-export function YoutubeInput({ handleAddQueue }: YoutubeInputProps) {
+
+export function YoutubeInput({ socket, currentTrack, setCurrentTrack, queue, setQueue, spaceId }:
+  {
+    socket: Socket | null;
+    currentTrack: CurrentTrack;
+    setCurrentTrack: React.Dispatch<React.SetStateAction<CurrentTrack>>;
+    queue: Array<QueueItem>;
+    // setQueue: (queue: Array<QueueItem>) => void;
+    setQueue: React.Dispatch<React.SetStateAction<Array<QueueItem>>>;
+    spaceId: string;
+  }) {
+
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isValidUrl, setIsValidUrl] = useState(false);
 
   function handleYoutubeUrlInput(url: string) {
     setYoutubeUrl(url);
     setIsValidUrl(Boolean(convertToEmbedUrl(url)));
+  }
+
+  async function handleAddQueue(url: string, embedUrl: string) {
+    try {
+      const metadata = await fetchYoutubeTrackMetadata(url);
+
+      if (!currentTrack.url && queue.length === 0) {
+        setCurrentTrack({ url, embedUrl });
+        socket?.emit("trackChange", { spaceId, url, embedUrl });
+        return;
+      }
+
+      const queueItem: QueueItem = {
+        url,
+        name: metadata?.name || url,
+        imageUrl: metadata?.imageUrl,
+        artists: metadata?.artists,
+      };
+
+      setQueue((prevQueue) => [...prevQueue, queueItem]);
+
+      socket?.emit("addToQueue", { spaceId, queueItem });
+    } catch (error) {
+      console.error("Error adding to queue:", error);
+    }
   }
 
   function handleLoadEmbed() {

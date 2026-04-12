@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import type { Socket } from "socket.io-client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ReactPlayer from "react-player";
 import { Music } from "lucide-react";
+import type { Socket } from "socket.io-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { extractVideoId } from "@/utils/utils";
 import type { AdminPlaybackSnapshot, CurrentTrack, PlayerStateName } from "./player-types";
-import { buildApiEmbedUrl, IframePlayer, loadYouTubeIframeApi, mapPlayerState } from "./youtube-iframe-api";
 
 interface YoutubeEmbedProps {
-  currentTrack: CurrentTrack | null;
+  currentTrack: CurrentTrack;
   socket: Socket | null;
   spaceId: string;
   userId: string;
@@ -17,137 +17,186 @@ interface YoutubeEmbedProps {
   playBackState: AdminPlaybackSnapshot | null;
 }
 
-function getCurrentVideoId(track: CurrentTrack | null): string {
-  if (!track) {
-    return "";
-  }
-
+function getCurrentVideoId(track: CurrentTrack): string {
   return extractVideoId(track.url) ?? extractVideoId(track.embedUrl) ?? "";
 }
 
-export function YoutubeEmbed({
-  currentTrack,
-  socket,
-  spaceId,
-  userId,
-  isAdmin,
-  playBackState,
-}: YoutubeEmbedProps) {
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const playerRef = useRef<IframePlayer | null>(null);
-  const suppressNextPlaySyncRef = useRef(false);
+export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, playBackState }: YoutubeEmbedProps) {
+  const playerRef = useRef<any>(null);
+  const pendingPlaybackStateRef = useRef<AdminPlaybackSnapshot | null>(null);
+  const skipNextSyncedNonAdminPlayRef = useRef(false);
+  const lastHeartbeatAtRef = useRef(0);
+  const [playing, setPlaying] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
 
-  const apiEmbedUrl = useMemo(() => {
-    return currentTrack?.embedUrl ? buildApiEmbedUrl(currentTrack.embedUrl) : "";
-  }, [currentTrack?.embedUrl]);
+  const videoId = useMemo(() => getCurrentVideoId(currentTrack), [currentTrack]);
 
-  function emitPlayerEvent(playerState: PlayerStateName, videoId: string, errorCode?: number) {
+  function getCurrentTime(): number {
+    const current = playerRef.current?.currentTime;
+    return Number.isFinite(current) ? current : 0;
+  }
+
+  function getPlaybackRate(): number {
+    const current = playerRef.current?.playbackRate;
+    return Number.isFinite(current) ? current : 1;
+  }
+
+  function emitPlayerEvent(playerState: PlayerStateName, overrideTime?: number, isSeeking?: boolean) {
     if (!socket || !spaceId || !userId || !videoId) {
       return;
     }
 
-    const player = playerRef.current;
-    const currentTime = player ? player.getCurrentTime() : 0;
-    const playbackRate = player ? player.getPlaybackRate() : 1;
+    if(isSeeking){
+      console.log("seeking event triggered");
+    }
 
     socket.emit("playerEvent", {
       spaceId,
       userId,
       videoId,
       playerState,
-      currentTime: Number.isFinite(currentTime) ? currentTime : 0,
+      currentTime: overrideTime ?? getCurrentTime(),
       occurredAtMs: Date.now(),
-      playbackRate: Number.isFinite(playbackRate) ? playbackRate : 1,
-      errorCode,
+      playbackRate: getPlaybackRate(),
+      isSeeking,
     });
   }
 
-  useEffect(() => {
-    if (!currentTrack?.embedUrl) {
-      playerRef.current?.destroy();
-      playerRef.current = null;
-      return;
-    }
+  // function applyPlaybackState(snapshot: AdminPlaybackSnapshot | null) {
+  //   if (!snapshot) {
+  //     return;
+  //   }
+  //   console.log("Applying playback state snapshot:"); 
+  //   //doubt if this is the right method for seeking to specific time ?
+  //   playerRef.current.currentTime = snapshot?.currentTime ?? 0
 
-    let isCancelled = false;
-    const videoId = getCurrentVideoId(currentTrack);
+  //   if (snapshot?.playerState === "PLAYING") {
+  //     skipNextSyncedNonAdminPlayRef.current = true;
+  //     setPlaying(true);
+  //     return;
+  //   }
 
-    async function initializePlayer() {
-      if (!iframeRef.current) {
-        return;
-      }
-
-      const yt = await loadYouTubeIframeApi();
-      if (isCancelled || !iframeRef.current) {
-        return;
-      }
-
-      playerRef.current?.destroy();
-
-      playerRef.current = new yt.Player(iframeRef.current, {
-        events: {
-          onStateChange: (event) => {
-            const playerState = mapPlayerState(event.data);
-            if (!playerState) {
-              return;
-            }
-
-            emitPlayerEvent(playerState, videoId);
-
-            if (!isAdmin && playerState === "PLAYING") {
-              if (suppressNextPlaySyncRef.current) {
-                suppressNextPlaySyncRef.current = false;
-                return;
-              }
-
-              socket?.emit("requestAdminPlaybackSnapshot", { spaceId, userId, videoId });
-            }
-          },
-          onError: (event) => {
-            emitPlayerEvent("UNSTARTED", videoId, event.data);
-          },
-        },
-      });
-    }
-
-    initializePlayer().catch((error) => {
-      console.error("Failed to initialize YouTube iframe API player", error);
-    });
-
-    return () => {
-      isCancelled = true;
-      playerRef.current?.destroy();
-      playerRef.current = null;
-    };
-  }, [currentTrack, isAdmin, socket, spaceId, userId]);
+  //   if (snapshot?.playerState === "PAUSED" || snapshot?.playerState === "ENDED") {
+  //     setPlaying(false);
+  //   }
+  // }
 
   useEffect(() => {
-    if (isAdmin || !playBackState || !playerRef.current) {
+    if (!currentTrack.embedUrl) {
+      setIsPlayerReady(false);
+      pendingPlaybackStateRef.current = null;
+      setPlaying(false);
       return;
     }
 
-    const currentVideoId = getCurrentVideoId(currentTrack);
-    if (!playBackState.videoId || playBackState.videoId !== currentVideoId) {
+    if (isAdmin) {
       return;
     }
 
-    const player = playerRef.current;
-    player.seekTo(playBackState.currentTime, true);
+    // Non-admins start paused and sync from admin playback state updates/snapshots.
+    setPlaying(false);
+  }, [currentTrack.embedUrl, isAdmin]);
 
-    if (playBackState.playerState === "PLAYING") {
-      suppressNextPlaySyncRef.current = true;
-      player.playVideo();
+  useEffect(() => {
+    if (isAdmin || !playBackState || !currentTrack.embedUrl) {
       return;
     }
 
-    if (playBackState.playerState === "PAUSED" || playBackState.playerState === "ENDED") {
-      player.pauseVideo();
-    }
-  }, [playBackState, currentTrack, isAdmin]);
+    // if (!playBackState.videoId || playBackState.videoId !== videoId) {
+    //   return;
+    // }
 
-  if (!currentTrack) {
-    return null;
+    if (!isPlayerReady) {
+      console.log("player not ready, storing state in ref", playBackState)
+      pendingPlaybackStateRef.current = playBackState;
+      return;
+    }
+
+    console.log("Received playback state update from admin:", playBackState);
+
+     playerRef.current.currentTime = playBackState.currentTime;
+     setPlaying(playBackState.playerState === "PLAYING");
+     skipNextSyncedNonAdminPlayRef.current = true;
+    
+  }, [isAdmin, playBackState, currentTrack.embedUrl, videoId, isPlayerReady]);
+
+  function handlePlay() {
+    console.log("play event triggered");
+    emitPlayerEvent("PLAYING");
+    
+    if (isAdmin) {
+      setPlaying(true);
+      return;
+    }
+    
+    if (skipNextSyncedNonAdminPlayRef.current) {
+      console.log("playing from admin snapshot");
+      playerRef.current.currentTime = playBackState?.currentTime;
+      skipNextSyncedNonAdminPlayRef.current = false;
+      setPlaying(true);
+      return;
+    }
+
+    console.log("Requesting admin playback");
+    // Non-admin local resume must re-align with admin clock.
+    setPlaying(false);
+    socket?.emit("requestAdminPlaybackSnapshot", { spaceId, userId, videoId });
   }
+
+  function handlePause() {
+    console.log("pause event triggered");
+    setPlaying(false);
+    emitPlayerEvent("PAUSED");
+  }
+
+  function handleTimeUpdate() {
+    if (!isAdmin || !playing) {
+      return;
+    }
+
+    // ensure admin hearbeat sent only once per second, avoid overflooding server 
+    const now = Date.now();
+    if (now - lastHeartbeatAtRef.current < 1000) {
+      return;
+    }
+    lastHeartbeatAtRef.current = now;
+
+    emitPlayerEvent("PLAYING");
+  }
+
+  // Send immediate sync updates during and after admin seek.
+  function handleSeeking() {
+    if (!isAdmin) {
+      return;
+    }
+    emitPlayerEvent("PLAYING", getCurrentTime(), true);
+  }
+
+  function handleSeeked() {
+    if (!isAdmin) {
+      return;
+    }
+    emitPlayerEvent("PLAYING", getCurrentTime(), true);
+  }
+
+  function handleEnded() {
+    setPlaying(false);
+    emitPlayerEvent("ENDED");
+  }
+
+  function handleReady() {
+    console.log("Player ready");
+    setIsPlayerReady(true);
+    if (!pendingPlaybackStateRef.current) {
+      return;
+    }
+
+    playerRef.current.currentTime = pendingPlaybackStateRef.current.currentTime;
+    setPlaying(pendingPlaybackStateRef.current.playerState === "PLAYING");
+
+    pendingPlaybackStateRef.current = null;
+  }
+
 
   if (!currentTrack.embedUrl) {
     return (
@@ -173,24 +222,21 @@ export function YoutubeEmbed({
       </CardHeader>
       <CardContent>
         <div className="overflow-hidden rounded-lg bg-black p-0 m-0" style={{ borderRadius: "8px" }}>
-          <iframe
-            id="youtube-room-player"
-            ref={iframeRef}
-            data-testid="embed-iframe"
-            src={apiEmbedUrl}
+          <ReactPlayer
+            ref={playerRef}
+            src={currentTrack.embedUrl}
             width="100%"
-            height="352"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-            style={{
-              borderRadius: "8px",
-              backgroundColor: "black",
-              border: "none",
-              outline: "none",
-              display: "block",
-              clipPath: "inset(0 round 8px)",
-            }}
-            className="rounded-lg border-0 outline-0 overflow-hidden"
+            height="352px"
+            controls={isAdmin}
+            playing={playing}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onReady={handleReady}
+            onTimeUpdate={handleTimeUpdate}
+            onSeeking={handleSeeking}
+            onSeeked={handleSeeked}
+            onEnded={handleEnded}
+            style={{ borderRadius: "8px", overflow: "hidden" }}
           />
         </div>
       </CardContent>

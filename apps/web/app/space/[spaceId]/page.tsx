@@ -35,34 +35,6 @@ export default function Space() {
     redirect("/signin");
   }
 
-  function emitTrackChange(url: string, embedUrl: string) {
-    setCurrentTrack({ url, embedUrl });
-    socketRef.current?.emit("trackChange", { spaceId, url, embedUrl });
-  }
-
-  async function handleAddQueue(url: string, embedUrl: string) {
-    try {
-      const metadata = await fetchYoutubeTrackMetadata(url);
-
-      if (!currentTrack.url && queue.length === 0) {
-        emitTrackChange(url, embedUrl);
-        return;
-      }
-
-      const queueItem: QueueItem = {
-        url,
-        name: metadata?.name || url,
-        imageUrl: metadata?.imageUrl,
-        artists: metadata?.artists,
-      };
-
-      setQueue((prevQueue) => [...prevQueue, queueItem]);
-      socketRef.current?.emit("addToQueue", { spaceId, queueItem });
-    } catch (error) {
-      console.error("Error adding to queue:", error);
-    }
-  }
-
   useEffect(() => {
     const socket = io("http://localhost:3001");
     socketRef.current = socket;
@@ -70,8 +42,8 @@ export default function Space() {
     socket.on("connect", () => console.log("Connected to WebSocket server"));
     socket.on("connect_error", (error) => console.error("Connection error:", error));
     // if user tries to join space without userId, show error
-    socket.on("spaceJoinError", ({ code, message }: { code: string; message: string }) => {
-      console.error("Failed to join space:", { code, message });
+    socket.on("spaceJoinError", ({ message }: { message: string }) => {
+      console.error("Failed to join space:", { message });
     });
 
     socket.on("initialSync", (payload: InitialSyncPayload) => {
@@ -94,7 +66,8 @@ export default function Space() {
       setPlayBackState(playbackState);
     });
 
-    socket.on("adminPlaybackSnapshot", (playbackState: AdminPlaybackSnapshot | null) => {
+    socket.on("RequestedadminPlaybackSnapshot", (playbackState: AdminPlaybackSnapshot | null) => {
+      console.log("REQUESTED snapshot received: updating STATE", playbackState);
       setPlayBackState(playbackState);
     });
 
@@ -122,8 +95,15 @@ export default function Space() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="flex flex-col justify-start">
-            <YoutubeInput handleAddQueue={handleAddQueue} />
+            <YoutubeInput
+              socket={socketRef.current}
+              currentTrack={currentTrack}
+              setCurrentTrack={setCurrentTrack} 
+              queue={queue} setQueue={setQueue} 
+              spaceId={spaceId} />
+
             <QueueList queue={queue} />
+            
           </div>
 
           <div className="flex flex-col justify-start">
