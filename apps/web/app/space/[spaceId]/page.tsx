@@ -66,10 +66,6 @@ export default function Space() {
       setPlayBackState(playbackState);
     });
 
-    socket.on("RequestedadminPlaybackSnapshot", (playbackState: AdminPlaybackSnapshot | null) => {
-      console.log("REQUESTED snapshot received: updating STATE", playbackState);
-      setPlayBackState(playbackState);
-    });
 
     socket.emit("joinSpace", { spaceId, userId, intent });
 

@@ -7,6 +7,8 @@ import type { Socket } from "socket.io-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { extractVideoId } from "@/utils/utils";
 import type { AdminPlaybackSnapshot, CurrentTrack, PlayerStateName } from "./player-types";
+import { set } from "better-auth";
+
 
 interface YoutubeEmbedProps {
   currentTrack: CurrentTrack;
@@ -23,8 +25,6 @@ function getCurrentVideoId(track: CurrentTrack): string {
 
 export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, playBackState }: YoutubeEmbedProps) {
   const playerRef = useRef<any>(null);
-  const pendingPlaybackStateRef = useRef<AdminPlaybackSnapshot | null>(null);
-  const skipNextSyncedNonAdminPlayRef = useRef(false);
   const lastHeartbeatAtRef = useRef(0);
   const [playing, setPlaying] = useState(false);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -41,16 +41,46 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
     return Number.isFinite(current) ? current : 1;
   }
 
-  function emitPlayerEvent(playerState: PlayerStateName, overrideTime?: number, isSeeking?: boolean) {
-    if (!socket || !spaceId || !userId || !videoId) {
+  useEffect(() => {
+    if (isAdmin || !playBackState || !currentTrack.embedUrl) {
       return;
     }
 
-    if(isSeeking){
-      console.log("seeking event triggered");
+    console.log('snapshot currentTime', playBackState.currentTime)
+    console.log('snapshot playerState', playBackState.playerState);
+    console.log('playerReady', isPlayerReady);
+
+    if(playerRef.current && isPlayerReady){
+      console.log("hello")
+      if(playBackState.playerState == "PAUSED" || playBackState.playerState == "ENDED") {
+        setPlaying(false);
+        return;
+      }
+      else if(playBackState.playerState == "PLAYING"){
+        console.log("admin is playing")
+        const currentTime = getCurrentTime();
+        const timeDiff = Math.abs(currentTime - playBackState.currentTime);
+        if(timeDiff > 1){
+          console.log("time diff > 1s");
+          playerRef.current.currentTime = playBackState.currentTime;
+        }
+        setPlaying(true);
+      }
+    }
+    
+  }, [isAdmin, playBackState, currentTrack.embedUrl, videoId, isPlayerReady]);
+
+
+  function emitSnapshot(playerState: PlayerStateName, overrideTime?: number, isSeeking?: boolean) {
+    if (!socket || !spaceId || !userId || !videoId || !isAdmin) {
+      return;
     }
 
-    socket.emit("playerEvent", {
+    if(playerState === "PLAYING"){
+      console.log("currentTime:", playerRef.current?.currentTime);
+    }
+
+    socket.emit("adminSnapshot", {
       spaceId,
       userId,
       videoId,
@@ -62,91 +92,52 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
     });
   }
 
-  // function applyPlaybackState(snapshot: AdminPlaybackSnapshot | null) {
-  //   if (!snapshot) {
+  // function handlePlay() {
+  //   console.log("play event triggered");
+  //   emitSnapshot("PLAYING");
+    
+  //   if (isAdmin) {
+  //     setPlaying(true);
   //     return;
   //   }
-  //   console.log("Applying playback state snapshot:"); 
-  //   //doubt if this is the right method for seeking to specific time ?
-  //   playerRef.current.currentTime = snapshot?.currentTime ?? 0
-
-  //   if (snapshot?.playerState === "PLAYING") {
-  //     skipNextSyncedNonAdminPlayRef.current = true;
+    
+  //   if (skipNextSyncedNonAdminPlayRef.current) {
+  //     console.log("playing from admin snapshot");
+  //     playerRef.current.currentTime = playBackState?.currentTime;
+  //     skipNextSyncedNonAdminPlayRef.current = false;
   //     setPlaying(true);
   //     return;
   //   }
 
-  //   if (snapshot?.playerState === "PAUSED" || snapshot?.playerState === "ENDED") {
-  //     setPlaying(false);
-  //   }
+  //   console.log("Requesting admin playback");
+  //   // Non-admin local resume must re-align with admin clock.
+  //   setPlaying(false);
+  //   socket?.emit("requestAdminPlaybackSnapshot", { spaceId, userId, videoId });
   // }
 
-  useEffect(() => {
-    if (!currentTrack.embedUrl) {
-      setIsPlayerReady(false);
-      pendingPlaybackStateRef.current = null;
+  function handlePlaying() {
+    if(isAdmin){
+      setPlaying(true);
+      return;
+    }
+
+    if(playBackState?.playerState === "PAUSED" || playBackState?.playerState === "ENDED"){
       setPlaying(false);
       return;
     }
-
-    if (isAdmin) {
-      return;
-    }
-
-    // Non-admins start paused and sync from admin playback state updates/snapshots.
-    setPlaying(false);
-  }, [currentTrack.embedUrl, isAdmin]);
-
-  useEffect(() => {
-    if (isAdmin || !playBackState || !currentTrack.embedUrl) {
-      return;
-    }
-
-    // if (!playBackState.videoId || playBackState.videoId !== videoId) {
-    //   return;
-    // }
-
-    if (!isPlayerReady) {
-      console.log("player not ready, storing state in ref", playBackState)
-      pendingPlaybackStateRef.current = playBackState;
-      return;
-    }
-
-    console.log("Received playback state update from admin:", playBackState);
-
-     playerRef.current.currentTime = playBackState.currentTime;
-     setPlaying(playBackState.playerState === "PLAYING");
-     skipNextSyncedNonAdminPlayRef.current = true;
-    
-  }, [isAdmin, playBackState, currentTrack.embedUrl, videoId, isPlayerReady]);
-
-  function handlePlay() {
-    console.log("play event triggered");
-    emitPlayerEvent("PLAYING");
-    
-    if (isAdmin) {
+    else if(playBackState?.playerState === "PLAYING"){
+      //if client has more than 1 second differece from admin snapshot, seek to snapshot time 
+      if(playBackState?.currentTime && Math.abs(getCurrentTime() - playBackState.currentTime) > 1){
+        playerRef.current.currentTime = playBackState.currentTime;
+      }
       setPlaying(true);
-      return;
     }
-    
-    if (skipNextSyncedNonAdminPlayRef.current) {
-      console.log("playing from admin snapshot");
-      playerRef.current.currentTime = playBackState?.currentTime;
-      skipNextSyncedNonAdminPlayRef.current = false;
-      setPlaying(true);
-      return;
-    }
-
-    console.log("Requesting admin playback");
-    // Non-admin local resume must re-align with admin clock.
-    setPlaying(false);
-    socket?.emit("requestAdminPlaybackSnapshot", { spaceId, userId, videoId });
   }
 
   function handlePause() {
     console.log("pause event triggered");
     setPlaying(false);
-    emitPlayerEvent("PAUSED");
+    emitSnapshot("PAUSED");
   }
 
   function handleTimeUpdate() {
@@ -154,47 +145,19 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
       return;
     }
 
-    // ensure admin hearbeat sent only once per second, avoid overflooding server 
+    // ensure admin hearbeat sent only once 0.5 second, avoid overflooding server 
     const now = Date.now();
-    if (now - lastHeartbeatAtRef.current < 1000) {
+    if (now - lastHeartbeatAtRef.current < 600) {
       return;
     }
     lastHeartbeatAtRef.current = now;
 
-    emitPlayerEvent("PLAYING");
-  }
-
-  // Send immediate sync updates during and after admin seek.
-  function handleSeeking() {
-    if (!isAdmin) {
-      return;
-    }
-    emitPlayerEvent("PLAYING", getCurrentTime(), true);
-  }
-
-  function handleSeeked() {
-    if (!isAdmin) {
-      return;
-    }
-    emitPlayerEvent("PLAYING", getCurrentTime(), true);
+    emitSnapshot("PLAYING");
   }
 
   function handleEnded() {
     setPlaying(false);
-    emitPlayerEvent("ENDED");
-  }
-
-  function handleReady() {
-    console.log("Player ready");
-    setIsPlayerReady(true);
-    if (!pendingPlaybackStateRef.current) {
-      return;
-    }
-
-    playerRef.current.currentTime = pendingPlaybackStateRef.current.currentTime;
-    setPlaying(pendingPlaybackStateRef.current.playerState === "PLAYING");
-
-    pendingPlaybackStateRef.current = null;
+    emitSnapshot("ENDED");
   }
 
 
@@ -229,12 +192,10 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
             height="352px"
             controls={isAdmin}
             playing={playing}
-            onPlay={handlePlay}
+            onPlaying={handlePlaying}
             onPause={handlePause}
-            onReady={handleReady}
+            onReady={() => {console.log("player is ready"); setIsPlayerReady(true); setPlaying(true);}}
             onTimeUpdate={handleTimeUpdate}
-            onSeeking={handleSeeking}
-            onSeeked={handleSeeked}
             onEnded={handleEnded}
             style={{ borderRadius: "8px", overflow: "hidden" }}
           />

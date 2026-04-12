@@ -65,7 +65,7 @@ export function initializeSocketServer() {
       socket.to(spaceId).emit("trackUpdate", { url, embedUrl });
     });
 
-    socket.on("playerEvent", async ({
+    socket.on("adminSnapshot", async ({
       spaceId,
       userId,
       videoId,
@@ -76,16 +76,9 @@ export function initializeSocketServer() {
       isSeeking,
     }: PlayerEventPayload) => {
 
-      console.log("event from client", userId, playerState)
-
       const adminId = await redisClient.get(redisKeys.admin(spaceId));
       if (adminId !== userId) {
-        console.log("user is not admin, ignoring player event");
         return;
-      }
-
-      if(isSeeking){
-        console.log("admin is seeking");
       }
 
       const previousStatePayload = await redisClient.hgetall(redisKeys.playbackState(spaceId));
@@ -109,18 +102,7 @@ export function initializeSocketServer() {
         playbackRate: String(snapshot.playbackRate),
       });
 
-      const shouldBroadcast =
-           snapshot.playerState !== "PLAYING"
-        || previousState?.playerState !== "PLAYING"
-        || previousState?.videoId !== snapshot.videoId
-        || Boolean(isSeeking);
-
-      // Persist PLAYING heartbeats for snapshot accuracy, but avoid room-wide
-      // per-second broadcasts that cause unnecessary client updates/renders.
-      if (shouldBroadcast) {
-        console.log("broadcasting...........")
-        io.to(spaceId).emit("adminPlaybackStateUpdate", snapshot);
-      }
+      io.to(spaceId).emit("adminPlaybackStateUpdate", snapshot);
 
       if (playerState === "ENDED") {
         const currentTrack = await redisClient.hgetall(redisKeys.currentTrack(spaceId));
@@ -131,27 +113,6 @@ export function initializeSocketServer() {
           await advanceToNextTrack(spaceId, io, redisClient);
         }
       }
-    });
-
-    socket.on("requestAdminPlaybackSnapshot", async ({ spaceId, videoId }: SnapshotRequestPayload) => {
-      if (!spaceId) {
-        return;
-      }
-
-      const stored = await redisClient.hgetall(redisKeys.playbackState(spaceId));
-      const snapshot = parseStoredPlaybackState(stored);
-
-      if (!snapshot) {
-        socket.emit("RequestedadminPlaybackSnapshot", null);
-        return;
-      }
-
-      if (videoId && snapshot.videoId !== videoId) {
-        socket.emit("RequestedadminPlaybackSnapshot", snapshot);
-        return;
-      }
-
-      socket.emit("RequestedadminPlaybackSnapshot", computePlaybackSnapshot(snapshot));
     });
 
     socket.on("upvoteTrack", ({ spaceId, trackId }) => {
