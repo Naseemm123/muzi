@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { getAccessToken } from '@/lib/auth-client';
 
 // ===== Shared Spotify Types =====
 export interface YoutubeVideo {
@@ -16,7 +15,7 @@ export interface QueueItem {
   artists?: string[];
 }
 
-export function extractVideoId(url: string): string | null { 
+export function extractVideoId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
   return match && match[1] ? match[1] : null;
 }
@@ -29,39 +28,12 @@ export function convertToEmbedUrl(url: string): string {
     : "";
 }
 
-// TODO : move this to backend to avoid exposing access token in client
 export async function fetchYoutubeTrackMetadata(
   trackUrl: string,
 ): Promise<YoutubeVideo | null> {
   try {
-    const trackId = extractVideoId(trackUrl);
-
-    if (!trackId) return null;
-
-
-    // get the access token for google provider to fetch youtube metadata
-    const token = await getAccessToken({
-      providerId: "google",
-    })
-
-    const accessToken = token.data?.accessToken;
-
-    const response = await axios.get(`https://www.googleapis.com/youtube/v3/videos?id=${trackId}&part=snippet,contentDetails`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    const video = response.data?.items?.[0];
-    if (!video) return null;
-
-    return {
-      id: video.id,
-      name: video.snippet?.title,
-      imageUrl: video.snippet?.thumbnails?.default?.url,
-      artists: video.snippet?.channelTitle ? [video.snippet.channelTitle] : [],
-    };
-
+    const response = await axios.post<YoutubeVideo>("/api/youtube/metadata", { trackUrl });
+    return response.data ?? null;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("AxiosError fetching YouTube track metadata:", error.response?.status, error.response?.data);
