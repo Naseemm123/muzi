@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@workspace/ui/components/card";
@@ -10,12 +10,20 @@ import { useRouter } from "next/navigation";
 
 interface RoomFormProps {
   session: any;
+  error?: string;
 }
 
 
 type FormMode = "join" | "create";
 
-export function RoomForm({ session }: RoomFormProps) {
+export function RoomForm({ session, error }: RoomFormProps) {
+
+  useEffect(() => {
+    if(error){
+      alert(error)
+    }
+  }, [error])
+
 
   const router = useRouter();
   const [mode, setMode] = useState<FormMode>("join");

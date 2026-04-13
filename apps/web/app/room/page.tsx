@@ -3,22 +3,19 @@ import { headers } from "next/headers";
 import { RoomForm } from "./room-form";
 import { redirect } from "next/navigation";
 
-export default async function Room() {
+export default async function Room({ searchParams }: {  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;}) {
 
-
-  console.log("Fetching session in Room page");
+  const sp = await searchParams
+  const error = sp.error as string | undefined;
 
   const session = await auth.api.getSession({
     headers: await headers() 
   });
 
   if(!session){
-      console.log("No session found, redirecting to /signin");
       redirect('/signin');
   }
-
-  console.log("session", session); 
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
       {/* Animated Background */}
@@ -43,7 +40,7 @@ export default async function Room() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <RoomForm session={session} />
+        <RoomForm session={session} error={error} />
       </div>
     </div>
   );

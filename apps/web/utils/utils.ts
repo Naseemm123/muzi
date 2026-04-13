@@ -46,8 +46,6 @@ export async function fetchYoutubeTrackMetadata(
 
     const accessToken = token.data?.accessToken;
 
-    console.log("Access token for YouTube API:", accessToken);
-
     const response = await axios.get(`https://www.googleapis.com/youtube/v3/videos?id=${trackId}&part=snippet,contentDetails`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,

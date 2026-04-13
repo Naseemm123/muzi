@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { redirect, useParams, useSearchParams } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "@/lib/auth-client";
-import { fetchYoutubeTrackMetadata, QueueItem } from "@/utils/utils";
+import { QueueItem } from "@/utils/utils";
 import { QueueList, YoutubeEmbed, YoutubeInput } from "./youtube-player";
 import type { AdminPlaybackSnapshot, CurrentTrack } from "./player-types";
 
@@ -43,7 +43,7 @@ export default function Space() {
     socket.on("connect_error", (error) => console.error("Connection error:", error));
     // if user tries to join space without userId, show error
     socket.on("spaceJoinError", ({ message }: { message: string }) => {
-      console.error("Failed to join space:", { message });
+      redirect(`/room?error=${message}`);
     });
 
     socket.on("initialSync", (payload: InitialSyncPayload) => {
@@ -65,7 +65,6 @@ export default function Space() {
     socket.on("adminPlaybackStateUpdate", (playbackState: AdminPlaybackSnapshot | null) => {
       setPlayBackState(playbackState);
     });
-
 
     socket.emit("joinSpace", { spaceId, userId, intent });
 

@@ -56,7 +56,6 @@ export function initializeSocketServer() {
         playbackState: parseStoredPlaybackState(playbackStatePayload),
       });
 
-      console.log(`Client ${socket.id} joined space ${spaceId}`);
     });
 
     socket.on("trackChange", async ({ spaceId, url, embedUrl }: TrackChangePayload) => {
@@ -92,8 +91,6 @@ export function initializeSocketServer() {
         playbackRate: playbackRate || 1,
       };
 
-      console.log("Received player event from admin:", snapshot);
-
       await redisClient.hset(redisKeys.playbackState(spaceId), {
         videoId: snapshot.videoId,
         playerState: snapshot.playerState,
@@ -120,6 +117,15 @@ export function initializeSocketServer() {
     });
 
     socket.on("addToQueue", async ({ queueItem, spaceId }) => {
+      // check if item already in queue
+      const existingQueue = await redisClient.zrange(redisKeys.queue(spaceId), 0, -1);
+      const isAlreadyInQueue = existingQueue.some((item) => {
+        const parsedItem = JSON.parse(item);
+        return parsedItem.id === queueItem.id;
+      });
+      if (isAlreadyInQueue) {
+        return;
+      }
       await redisClient.zadd(redisKeys.queue(spaceId), 0, JSON.stringify(queueItem));
       const updatedQueue = await redisClient.zrange(redisKeys.queue(spaceId), 0, -1);
       socket.to(spaceId).emit("queueUpdated", parseQueueItems(updatedQueue));

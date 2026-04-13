@@ -46,22 +46,15 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
       return;
     }
 
-    console.log('snapshot currentTime', playBackState.currentTime)
-    console.log('snapshot playerState', playBackState.playerState);
-    console.log('playerReady', isPlayerReady);
-
     if(playerRef.current && isPlayerReady){
-      console.log("hello")
       if(playBackState.playerState == "PAUSED" || playBackState.playerState == "ENDED") {
         setPlaying(false);
         return;
       }
       else if(playBackState.playerState == "PLAYING"){
-        console.log("admin is playing")
         const currentTime = getCurrentTime();
         const timeDiff = Math.abs(currentTime - playBackState.currentTime);
-        if(timeDiff > 1){
-          console.log("time diff > 1s");
+        if(timeDiff > 0.5){
           playerRef.current.currentTime = playBackState.currentTime;
         }
         setPlaying(true);
@@ -76,10 +69,6 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
       return;
     }
 
-    if(playerState === "PLAYING"){
-      console.log("currentTime:", playerRef.current?.currentTime);
-    }
-
     socket.emit("adminSnapshot", {
       spaceId,
       userId,
@@ -92,29 +81,6 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
     });
   }
 
-  // function handlePlay() {
-  //   console.log("play event triggered");
-  //   emitSnapshot("PLAYING");
-    
-  //   if (isAdmin) {
-  //     setPlaying(true);
-  //     return;
-  //   }
-    
-  //   if (skipNextSyncedNonAdminPlayRef.current) {
-  //     console.log("playing from admin snapshot");
-  //     playerRef.current.currentTime = playBackState?.currentTime;
-  //     skipNextSyncedNonAdminPlayRef.current = false;
-  //     setPlaying(true);
-  //     return;
-  //   }
-
-  //   console.log("Requesting admin playback");
-  //   // Non-admin local resume must re-align with admin clock.
-  //   setPlaying(false);
-  //   socket?.emit("requestAdminPlaybackSnapshot", { spaceId, userId, videoId });
-  // }
-
   function handlePlaying() {
     if(isAdmin){
       setPlaying(true);
@@ -126,8 +92,8 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
       return;
     }
     else if(playBackState?.playerState === "PLAYING"){
-      //if client has more than 1 second differece from admin snapshot, seek to snapshot time 
-      if(playBackState?.currentTime && Math.abs(getCurrentTime() - playBackState.currentTime) > 1){
+      //if client has more than 0.5 second differece from admin snapshot, seek to snapshot time 
+      if(playBackState?.currentTime && Math.abs(getCurrentTime() - playBackState.currentTime) > 0.5){
         playerRef.current.currentTime = playBackState.currentTime;
       }
       setPlaying(true);
@@ -135,7 +101,6 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
   }
 
   function handlePause() {
-    console.log("pause event triggered");
     setPlaying(false);
     emitSnapshot("PAUSED");
   }
@@ -194,7 +159,7 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
             playing={playing}
             onPlaying={handlePlaying}
             onPause={handlePause}
-            onReady={() => {console.log("player is ready"); setIsPlayerReady(true); setPlaying(true);}}
+            onReady={() => {setIsPlayerReady(true); setPlaying(true);}}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
             style={{ borderRadius: "8px", overflow: "hidden" }}
