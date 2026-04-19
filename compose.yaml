@@ -4,8 +4,8 @@ services:
     container_name: drizzle-muzi-local
     restart: always
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=naseem123
       - POSTGRES_DB=muzi_db
     ports:
       - "5432:5432"
@@ -27,11 +27,9 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DATABASE_URL=postgresql://user:password@db:5432/muzi_db
     ports:
       - "3001:3001"
     depends_on:
-      - db
       - redis
 
   web:
@@ -40,7 +38,7 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: muzi-web
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/muzi_db
+      - DATABASE_URL=postgresql://postgres:naseem123@db:5432/muzi_db
       - BETTER_AUTH_SECRET=dTyG4XyZMTu65jjA8wjbeOJDB67SnOOR
       - BETTER_AUTH_URL=http://localhost:3000
       - NEXT_PUBLIC_SOCKET_URL=http://localhost:3001

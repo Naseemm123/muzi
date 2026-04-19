@@ -54,7 +54,7 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
       else if(playBackState.playerState == "PLAYING"){
         const currentTime = getCurrentTime();
         const timeDiff = Math.abs(currentTime - playBackState.currentTime);
-        if(timeDiff > 0.5){
+        if(timeDiff > 0.3){
           playerRef.current.currentTime = playBackState.currentTime;
         }
         setPlaying(true);
@@ -92,8 +92,8 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
       return;
     }
     else if(playBackState?.playerState === "PLAYING"){
-      //if client has more than 0.5 second differece from admin snapshot, seek to snapshot time 
-      if(playBackState?.currentTime && Math.abs(getCurrentTime() - playBackState.currentTime) > 0.5){
+      //if client has more than 0.3 second differece from admin snapshot, seek to snapshot time 
+      if(playBackState?.currentTime && Math.abs(getCurrentTime() - playBackState.currentTime) > 0.3){
         playerRef.current.currentTime = playBackState.currentTime;
       }
       setPlaying(true);
