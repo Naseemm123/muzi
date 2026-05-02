@@ -9,6 +9,7 @@ import type {
   PlaybackSnapshot,
   SnapshotRequestPayload,
   TrackChangePayload,
+  QueueItem,
 } from "./socket/types";
 import { extractVideoId } from "./socket/youtube";
 
@@ -116,12 +117,12 @@ export function initializeSocketServer() {
       console.log(`Track ${trackId} upvoted in space ${spaceId}`);
     });
 
-    socket.on("addToQueue", async ({ queueItem, spaceId }) => {
+    socket.on("addToQueue", async ({ spaceId, queueItem }: { spaceId: string; queueItem: QueueItem }) => {
       // check if item already in queue
       const existingQueue = await redisClient.zrange(redisKeys.queue(spaceId), 0, -1);
       const isAlreadyInQueue = existingQueue.some((item) => {
         const parsedItem = JSON.parse(item);
-        return parsedItem.id === queueItem.id;
+        return parsedItem.url === queueItem.url;
       });
       if (isAlreadyInQueue) {
         return;
