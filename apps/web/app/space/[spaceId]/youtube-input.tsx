@@ -67,7 +67,7 @@ export function YoutubeInput({ socket, currentTrack, setCurrentTrack, queue, set
   }
 
   return (
-    <Card className="backdrop-blur-sm bg-card/80 border-border/50 h-fit">
+    <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Music className="w-5 h-5" />
@@ -82,20 +82,20 @@ export function YoutubeInput({ socket, currentTrack, setCurrentTrack, queue, set
             onChange={(e) => handleYoutubeUrlInput(e.target.value)}
             className="flex-1"
           />
-          <Button onClick={handleLoadEmbed} disabled={!isValidUrl} className="shrink-0">
+          <Button onClick={handleLoadEmbed} disabled={!isValidUrl} className="shrink-0 rounded-full bg-white text-black hover:bg-white/90">
             Add +
           </Button>
         </div>
 
         {youtubeUrl && !isValidUrl && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
             <p className="text-sm text-destructive">Invalid Youtube URL. Please paste a valid Youtube video URL.</p>
           </div>
         )}
 
         {youtubeUrl && isValidUrl && (
-          <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-            <p className="text-sm text-green-700 dark:text-green-400">✅ Valid Youtube URL! Click "Add +" to add to queue.</p>
+          <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-3">
+            <p className="text-sm text-emerald-300">Valid YouTube URL. Click "Add +" to queue it.</p>
           </div>
         )}
       </CardContent>

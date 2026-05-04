@@ -19,7 +19,7 @@ export default async function Room({ searchParams }: {  searchParams: Promise<{ 
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
+    <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
       <div className="relative z-10 w-full max-w-md">
         <RoomForm session={session} error={error} />
       </div>

@@ -7,7 +7,6 @@ import type { Socket } from "socket.io-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { extractVideoId } from "@/utils/utils";
 import type { AdminPlaybackSnapshot, CurrentTrack, PlayerStateName } from "./player-types";
-import { set } from "better-auth";
 
 
 interface YoutubeEmbedProps {
@@ -128,9 +127,9 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
 
   if (!currentTrack.embedUrl) {
     return (
-      <Card className="backdrop-blur-sm bg-card/80 border-border/50 h-fit">
+      <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mb-4">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5">
             <Music className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="font-semibold text-lg mb-2">No Track Selected</h3>
@@ -141,7 +140,7 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
   }
 
   return (
-    <Card className="backdrop-blur-sm bg-card/80 border-border/50 h-fit">
+    <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Music className="w-5 h-5" />

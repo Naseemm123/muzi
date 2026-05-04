@@ -13,7 +13,7 @@ export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<Que
   }
 
   return (
-    <Card className="backdrop-blur-sm bg-card/80 border-border/50 h-fit">
+    <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Queue ({queue.length})</span>
@@ -22,7 +22,7 @@ export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<Que
       <CardContent className="space-y-2">
         {queue.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-12 h-12 bg-muted/20 rounded-lg flex items-center justify-center mb-3">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-white/5">
               <span className="text-lg">♪</span>
             </div>
             <p className="text-sm text-muted-foreground">No songs queued yet</p>
@@ -32,7 +32,7 @@ export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<Que
             {queue.map((item, idx) => (
               <div
                 key={`${item.url}-${idx}`}
-                className="flex items-center gap-3 rounded-lg border border-border/30 bg-gradient-to-r from-muted/5 to-muted/10 hover:border-border/50 transition-colors p-2"
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] p-2 transition-colors hover:bg-white/[0.04]"
               >
                 <div className="relative shrink-0 w-12 h-12 rounded-md overflow-hidden bg-muted/30 border border-border/20">
                   {item.imageUrl ? (
@@ -57,8 +57,8 @@ export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<Que
                   aria-pressed={Boolean(item.hasUpvoted)}
                   className={`shrink-0 inline-flex items-center justify-center rounded-full border p-1.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 ${
                     item.hasUpvoted
-                      ? "border-primary/50 bg-primary/15 text-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]"
-                      : "border-border/40 bg-background/70 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      ? "border-white/35 bg-white/20 text-white"
+                      : "border-white/20 bg-black/30 text-white/60 hover:bg-white/10 hover:text-white"
                   }`}
                   aria-label={`${item.hasUpvoted ? "Remove upvote from" : "Upvote"} ${item.name || "track"}`}
                 >

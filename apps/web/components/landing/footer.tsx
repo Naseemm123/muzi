@@ -3,21 +3,16 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="relative z-10 border-t border-white/5 bg-black/50 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-8 py-12">
-        
-        {/* Main Footer Content */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-8 md:space-y-0">
-          
-          {/* Brand */}
+    <footer className="relative z-10 mt-10 border-t border-white/10 bg-black/30 backdrop-blur-xl">
+      <div className="mx-auto max-w-[1400px] px-4 py-10 md:px-6">
+        <div className="flex flex-col items-start justify-between space-y-8 md:flex-row md:items-center md:space-y-0">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
-              <span className="text-black font-bold text-sm">M</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-md border border-white/20 bg-white/10">
+              <span className="text-sm font-bold text-white">M</span>
             </div>
-            <span className="text-white font-medium">Muzi</span>
+            <span className="font-medium text-white">Muzi</span>
           </div>
 
-          {/* Links */}
           <div className="flex space-x-8 text-white/60">
             <Link href="/privacy" className="hover:text-white transition-colors text-sm">
               Privacy
@@ -33,7 +28,6 @@ export function Footer() {
             </Link>
           </div>
 
-          {/* Social */}
           <div className="flex space-x-4">
             <Link href="#" className="text-white/60 hover:text-white transition-colors">
               <Twitter className="w-5 h-5" />
@@ -44,16 +38,13 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="mt-12 pt-8 border-t border-white/5 text-center">
-          <p className="text-white/40 text-sm">
-            &copy; 2025 Muzi. Built for creators, by creators.
+        <div className="mt-10 border-t border-white/10 pt-6 text-center">
+          <p className="text-sm text-white/40">
+            &copy; 2026 Muzi. Built for creators, by creators.
           </p>
         </div>
       </div>
     </footer>
   );
 }
-
-
 

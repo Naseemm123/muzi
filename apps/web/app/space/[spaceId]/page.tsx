@@ -74,20 +74,20 @@ export default function Space() {
   }, [intent, spaceId, userId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 font-mono">
-      <div className="max-w-7xl mx-auto mb-8">
+    <div className="min-h-screen p-4 md:p-6">
+      <div className="mx-auto mb-8 max-w-7xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center" />
+            <div className="h-10 w-10 rounded-full border border-white/15 bg-white/10" />
             <div>
-              <h1 className="text-2xl font-bold">Space: {spaceId}</h1>
-              <p className="text-muted-foreground">Share music with friends</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-white">Space: {spaceId}</h1>
+              <p className="text-sm text-white/60">Share music with friends</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="flex flex-col justify-start">
             <YoutubeInput

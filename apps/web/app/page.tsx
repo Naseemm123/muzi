@@ -6,19 +6,22 @@ import { auth } from "@/lib/auth"; // path to your Better Auth server instance
 import { headers } from "next/headers";
 
 export default async function Page() {
-
- 
-const session = await auth.api.getSession({
-    headers: await headers() // you need to pass the headers object.
-})
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
-      
-      {/* Minimal gradient orb */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-r from-white/5 to-white/1 rounded-full blur-3xl animate-pulse"></div>
+    <div className="relative min-h-screen overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 20% 18%, rgba(255,255,255,0.08), transparent 34%), radial-gradient(circle at 78% 24%, rgba(255,255,255,0.06), transparent 35%), linear-gradient(120deg, rgba(255,255,255,0.02), transparent 45%, rgba(255,255,255,0.015))",
+        }}
+      />
+      <div className="ambient-orb-a pointer-events-none absolute left-[8%] top-[10%] h-72 w-72 rounded-full bg-white/10 blur-[110px]" />
+      <div className="ambient-orb-b pointer-events-none absolute right-[10%] top-[28%] h-80 w-80 rounded-full bg-slate-400/10 blur-[120px]" />
+      <div className="ambient-orb-a pointer-events-none absolute bottom-[-120px] left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-white/[0.05] blur-[140px]" />
 
       <Header session={session} />
       <Hero session={session} />

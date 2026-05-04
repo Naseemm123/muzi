@@ -3,6 +3,7 @@
 import { Button } from "@workspace/ui/components/button";
 import Link from "next/link";
 import { signOut } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
 
 export function SignIn() {
   // where user clicks button redirect to sign in page
@@ -10,7 +11,7 @@ export function SignIn() {
     <Button
       type="submit"
       variant="ghost"
-      className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
+      className="cursor-pointer text-white/80 hover:bg-white/10 hover:text-white"
     >
       <Link href={"/signin"}>
         Sign In
@@ -22,10 +23,16 @@ export function SignIn() {
 export function SignOut() {
   return (
     <Button
-      onClick={async () => await signOut()}
+      onClick={async () => await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            redirect("/");
+          }
+        }
+      })}
       type="submit"
       variant="ghost"
-      className="text-white/70 hover:text-white hover:bg-white/5 cursor-pointer"
+      className="cursor-pointer text-white/80 hover:bg-white/10 hover:text-white"
     >
       Sign Out
     </Button>

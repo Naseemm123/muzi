@@ -1,118 +1,78 @@
 import { Button } from "@workspace/ui/components/button";
 import Link from "next/link";
-import { ArrowRight, Github } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Reveal } from "./reveal";
 
 export function Hero({ session }: any) {
   return (
-    <main className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] px-8 text-center overflow-hidden">
-      
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Floating Particles */}
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white/20 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 10}s`,
-              animationDuration: `${8 + Math.random() * 4}s`,
-            }}
-          />
-        ))}
-        
-        {/* Larger Glowing Dots */}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={`glow-${i}`}
-            className="absolute w-2 h-2 bg-white/10 rounded-full blur-sm animate-glow"
-            style={{
-              left: `${20 + Math.random() * 60}%`,
-              top: `${20 + Math.random() * 60}%`,
-              animationDelay: `${Math.random() * 6}s`,
-              animationDuration: `${6 + Math.random() * 3}s`,
-            }}
-          />
-        ))}
+    <main className="relative z-10 mx-auto grid min-h-[76vh] w-full max-w-[1400px] grid-cols-1 items-center gap-12 px-4 py-16 md:px-6 lg:grid-cols-[1.08fr_0.92fr]">
+      <Reveal className="space-y-8">
+        <p className="w-fit rounded-full border border-white/15 bg-white/5 px-4 py-1 text-xs tracking-[0.18em] text-white/70 uppercase">
+            Shared Listening Spaces
+        </p>
+        <h1 className="text-5xl leading-[0.95] tracking-tight text-white sm:text-7xl">
+          Synchronized music
+          <br />
+          without friction.
+        </h1>
+        <p className="max-w-xl text-base leading-relaxed text-white/60 md:text-lg">
+          Create a room, invite people, and control playback together in real time. Built for focused listening sessions.
+        </p>
 
-        {/* Subtle Moving Lines */}
-        <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent animate-slide-right"></div>
-        <div className="absolute top-3/4 right-0 w-full h-px bg-gradient-to-l from-transparent via-white/5 to-transparent animate-slide-left"></div>
-        
-        {/* Radial Gradient Overlay */}
-        <div className="absolute inset-0 bg-radial-gradient from-white/[0.02] via-transparent to-transparent animate-pulse-slow"></div>
-      </div>
-
-      {/* Hero Content */}
-      <div className="max-w-4xl mx-auto space-y-12 relative z-10">
-        
-        {/* Main Headline */}
-        <div className="space-y-8 animate-fade-in-up">
-          <h1 className="text-6xl md:text-8xl font-light text-white leading-[0.9] tracking-tighter">
-            Real-time
-            <br />
-            <span className="font-medium relative">
-              Collaboration
-              {/* Subtle text glow effect */}
-              <div className="absolute inset-0 text-6xl md:text-8xl font-medium bg-gradient-to-r from-white/10 to-white/5 bg-clip-text text-transparent blur-sm -z-10">
-                Collaboration
-              </div>
-            </span>
-          </h1>
-          <p className="text-xl text-white/60 max-w-2xl mx-auto leading-relaxed font-light">
-            Build together in spaces that understand your workflow. 
-            Simple, fast, and beautifully designed.
-          </p>
-        </div>
-
-        {/* CTA Section */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up delay-300">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           {!session ? (
-            <>
-              <Button 
-                variant="ghost" 
-                className="text-white/70 hover:text-white hover:bg-white/5 group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/5 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                <span className="relative z-10 pl-3">Get Started</span>
-                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1 relative z-10" />
-              </Button>
-            </>
+            <Button className="group rounded-full bg-white px-6 text-black shadow-[0_10px_40px_rgba(255,255,255,0.15)] transition-transform hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0" asChild>
+              <Link href="/signin">
+                Get Started
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
           ) : (
             <>
-              <Button 
-                className="bg-white text-black hover:bg-white/90 px-8 py-3 font-medium group relative overflow-hidden"
-                asChild
-              >
+              <Button className="group rounded-full bg-white px-6 text-black shadow-[0_10px_40px_rgba(255,255,255,0.15)] transition-transform hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0" asChild>
                 <Link href="/room">
-                  <div className="absolute inset-0 bg-black/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative z-10">Get Started</span>
-                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1 relative z-10" />
+                  Open Rooms
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
-              <Button 
-                variant="ghost" 
-                className="text-white/70 hover:text-white hover:bg-white/5 group"
-                asChild
-              >
+              <Button variant="ghost" className="rounded-full border border-white/15 text-white/80 transition-colors hover:bg-white/10 hover:text-white" asChild>
                 <Link href="/space/demo">
-                  <span className="relative z-10">Try Demo</span>
+                  Try Demo
                 </Link>
               </Button>
             </>
           )}
         </div>
-
-        {/* Simple Stats */}
-        <div className="flex justify-center items-center space-x-12 pt-16 text-white/40 text-sm animate-fade-in-up delay-500">
-          <div className="hover:text-white/60 transition-colors cursor-default">10K+ users</div>
-          <div className="w-px h-4 bg-white/20"></div>
-          <div className="hover:text-white/60 transition-colors cursor-default">99.9% uptime</div>
-          <div className="w-px h-4 bg-white/20"></div>
-          <div className="hover:text-white/60 transition-colors cursor-default">Open source</div>
+        <div className="grid max-w-xl grid-cols-1 gap-2 pt-2 text-sm text-white/70 sm:grid-cols-3">
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">Room-based playback</div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">Live queue voting</div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">Shared controls</div>
         </div>
-      </div>
+      </Reveal>
+
+      <Reveal delayMs={120}>
+        <div className="relative mx-auto w-full max-w-md">
+          <div className="absolute -inset-8 rounded-[2rem] bg-gradient-to-b from-white/15 to-transparent blur-2xl" />
+          <div className="relative space-y-3 rounded-[1.5rem] border border-white/15 bg-black/40 p-4 backdrop-blur-2xl">
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <p className="text-sm text-white/80">room: lofi-friday</p>
+              <span className="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-2 py-0.5 text-xs text-emerald-300">live</span>
+            </div>
+            <div className="group rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-transform duration-300 hover:-translate-y-0.5">
+              <p className="text-sm text-white">Now playing</p>
+              <p className="mt-1 text-white/60">Drop links, reorder the vibe, keep everyone in sync.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm text-white/85 transition-colors hover:bg-white/10 active:scale-[0.99]">
+                + Add Track
+              </button>
+              <button className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm text-white/85 transition-colors hover:bg-white/10 active:scale-[0.99]">
+                Vote Queue
+              </button>
+            </div>
+          </div>
+        </div>
+      </Reveal>
     </main>
   );
 }

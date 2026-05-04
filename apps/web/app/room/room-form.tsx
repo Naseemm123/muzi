@@ -4,7 +4,7 @@ import { useState, useActionState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@workspace/ui/components/card";
-import { UserPlus, Users, ArrowRight, Music } from "lucide-react";
+import { UserPlus, Users, ArrowRight, Music, Sparkles } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -38,34 +38,39 @@ export function RoomForm({ session, error }: RoomFormProps) {
   const isPending = isJoiningPending || isCreatingPending;
 
   return (
-    <Card className="backdrop-blur-sm bg-card/80 border-border/50 shadow-2xl">
-      <CardHeader className="text-center space-y-4">
-        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-          <Music className="w-6 h-6 text-primary" />
+    <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] shadow-2xl backdrop-blur-xl">
+      <CardHeader className="space-y-5 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10">
+          <Music className="h-5 w-5 text-white" />
         </div>
 
         <div className="space-y-2">
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-semibold tracking-tight">
             {mode === "join" ? "Join Room" : "Create Room"}
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
+          <CardDescription className="text-white/60">
             {mode === "join"
               ? "Enter a room code to join an existing session"
-              : "Create a new room and invite others"
+              : "Create a new listening space and invite others"
             }
           </CardDescription>
         </div>
 
-        {/* Mode Toggle */}
-        <div className="flex bg-muted/50 p-1 rounded-lg">
+        <div className="relative grid grid-cols-2 rounded-xl border border-white/12 bg-black/35 p-1">
+          <div
+            className={cn(
+              "absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm transition-transform duration-300",
+              mode === "join" ? "translate-x-0" : "translate-x-[calc(100%+8px)]",
+            )}
+          />
           <button
             type="button"
             onClick={() => setMode("join")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+              "relative z-10 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-200",
               mode === "join"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-black"
+                : "text-white/65 hover:text-white"
             )}
           >
             <UserPlus className="w-4 h-4" />
@@ -75,10 +80,10 @@ export function RoomForm({ session, error }: RoomFormProps) {
             type="button"
             onClick={() => setMode("create")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
+              "relative z-10 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-200",
               mode === "create"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-black"
+                : "text-white/65 hover:text-white"
             )}
           >
             <Users className="w-4 h-4" />
@@ -91,17 +96,17 @@ export function RoomForm({ session, error }: RoomFormProps) {
         {mode === "join" ? (
           <form action={joinAction} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="roomCode" className="text-sm font-medium text-foreground">
+              <label htmlFor="roomCode" className="text-sm font-medium text-white/90">
                 Room Code
               </label>
               <Input
                 id="roomCode"
                 name="roomCode"
                 type="text"
-                placeholder="Enter room code..."
+                placeholder="Type room name..."
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
-                className="tracking-widest font-mono"
+                className="h-11 rounded-xl border-white/15 bg-black/25 font-mono tracking-[0.2em] text-white placeholder:text-white/35"
                 maxLength={8}
                 disabled={isPending}
                 required
@@ -110,7 +115,7 @@ export function RoomForm({ session, error }: RoomFormProps) {
 
             <Button
               type="submit"
-              className="w-full group"
+              className="group h-11 w-full rounded-xl bg-white text-black transition-transform hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0"
               disabled={isPending || !roomCode.trim()}
             >
               {isJoiningPending ? (
@@ -130,18 +135,18 @@ export function RoomForm({ session, error }: RoomFormProps) {
           <form action={createAction} className="space-y-4">
             <input type="hidden" name="adminId" value={session?.user?.id ?? ""} />
             <div className="space-y-2">
-              <label htmlFor="roomName" className="text-sm font-medium text-foreground">
+              <label htmlFor="roomName" className="text-sm font-medium text-white/90">
                 Room Name
               </label>
               <Input
                 id="roomName"
                 name="roomName"
                 type="text"
-                placeholder="Enter room name..."
+                placeholder="Type room name..."
                 value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
                 maxLength={50}
-                className="tracking-widest font-mono"
+                className="h-11 rounded-xl border-white/15 bg-black/25 font-mono tracking-[0.2em] text-white placeholder:text-white/35"
                 disabled={isPending}
                 required
               />
@@ -149,7 +154,7 @@ export function RoomForm({ session, error }: RoomFormProps) {
 
             <Button
               type="submit"
-              className="w-full group"
+              className="group h-11 w-full rounded-xl bg-white text-black transition-transform hover:-translate-y-0.5 hover:bg-white/90 active:translate-y-0"
               disabled={isPending || !roomName.trim() || !session?.user?.id}
             >
               {isCreatingPending ? (
@@ -169,16 +174,20 @@ export function RoomForm({ session, error }: RoomFormProps) {
 
         {/* User Info */}
         {session?.user && (
-          <div className="pt-4 border-t border-border/50">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                <span className="text-xs font-semibold text-primary">
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/25 p-3 text-sm text-muted-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/10">
+                <span className="text-xs font-semibold text-white">
                   {session.user.name?.[0]?.toUpperCase() || "U"}
                 </span>
               </div>
               <div>
-                <p className="font-medium text-foreground">{session.user.name}</p>
-                <p className="text-xs">{session.user.email}</p>
+                <p className="font-medium text-white">{session.user.name}</p>
+                <p className="text-xs text-white/60">{session.user.email}</p>
+              </div>
+              <div className="ml-auto flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wide text-white/70">
+                <Sparkles className="h-3 w-3" />
+                Ready
               </div>
             </div>
           </div>
