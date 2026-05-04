@@ -1,13 +1,20 @@
 import { Server } from "socket.io";
 import { httpServer, redisClient } from "./index";
-import { computePlaybackSnapshot, parseQueueItems, parseStoredPlaybackState } from "./socket/parsers";
+import { parseStoredPlaybackState } from "./socket/parsers";
+import {
+  addQueueItem,
+  buildQueueForUser,
+  emitQueueUpdatedWithVotes,
+  findQueueMemberByTrackId,
+  recomputeTrackScore,
+} from "./socket/queue-service";
 import { redisKeys } from "./socket/redis-keys";
 import { advanceToNextTrack, clearSpaceData } from "./socket/space-state";
 import type {
   JoinSpacePayload,
   PlayerEventPayload,
   PlaybackSnapshot,
-  SnapshotRequestPayload,
+  SetTrackVotePayload,
   TrackChangePayload,
   QueueItem,
 } from "./socket/types";
@@ -19,7 +26,6 @@ export function initializeSocketServer() {
   });
 
   io.on("connection", (socket) => {
-
     socket.on("joinSpace", async ({ spaceId, userId, intent = "join" }: JoinSpacePayload) => {
       if (!userId) {
         socket.emit("spaceJoinError", {
@@ -43,16 +49,17 @@ export function initializeSocketServer() {
       }
 
       socket.join(spaceId);
+      socket.data.userId = userId;
 
-      const [currentTrack, currentQueue, playbackStatePayload] = await Promise.all([
+      const [currentTrack, playbackStatePayload, queueWithVotes] = await Promise.all([
         redisClient.hgetall(redisKeys.currentTrack(spaceId)),
-        redisClient.zrange(redisKeys.queue(spaceId), 0, -1),
         redisClient.hgetall(redisKeys.playbackState(spaceId)),
+        buildQueueForUser(spaceId, userId, redisClient),
       ]);
 
       socket.emit("initialSync", {
         currentTrack: Object.keys(currentTrack).length > 0 ? currentTrack : { url: "", embedUrl: "" },
-        queue: parseQueueItems(currentQueue),
+        queue: queueWithVotes,
         isAdmin: (existingAdminId ?? userId) === userId,
         playbackState: parseStoredPlaybackState(playbackStatePayload),
       });
@@ -73,16 +80,12 @@ export function initializeSocketServer() {
       currentTime,
       occurredAtMs,
       playbackRate,
-      isSeeking,
     }: PlayerEventPayload) => {
 
       const adminId = await redisClient.get(redisKeys.admin(spaceId));
       if (adminId !== userId) {
         return;
       }
-
-      const previousStatePayload = await redisClient.hgetall(redisKeys.playbackState(spaceId));
-      const previousState = parseStoredPlaybackState(previousStatePayload);
 
       const snapshot: PlaybackSnapshot = {
         videoId,
@@ -104,32 +107,40 @@ export function initializeSocketServer() {
 
       if (playerState === "ENDED") {
         const currentTrack = await redisClient.hgetall(redisKeys.currentTrack(spaceId));
-        const currentTrackVideoId = currentTrack?.url ? extractVideoId(currentTrack.url) : null;
+        const currentTrackVideoId = currentTrack.url ? extractVideoId(currentTrack.url) : null;
 
         // Ignore stale ENDED callbacks from an old player instance.
         if (currentTrackVideoId && currentTrackVideoId === videoId) {
           await advanceToNextTrack(spaceId, io, redisClient);
+          await emitQueueUpdatedWithVotes(spaceId, io, redisClient);
         }
       }
     });
 
-    socket.on("upvoteTrack", ({ spaceId, trackId }) => {
-      console.log(`Track ${trackId} upvoted in space ${spaceId}`);
+    socket.on("setTrackVote", async ({ spaceId, trackId, userId, isUpvoted }: SetTrackVotePayload) => {
+      const queueMember = await findQueueMemberByTrackId(spaceId, trackId, redisClient);
+      if (!queueMember) {
+        return;
+      }
+
+      const trackVotersKey = redisKeys.trackVoters(spaceId, trackId);
+      const membershipChangeCount = isUpvoted
+        ? await redisClient.sadd(trackVotersKey, userId)
+        : await redisClient.srem(trackVotersKey, userId);
+
+      if (membershipChangeCount > 0) {
+        await recomputeTrackScore(spaceId, trackId, queueMember, redisClient);
+      }
+
+      await emitQueueUpdatedWithVotes(spaceId, io, redisClient);
     });
 
     socket.on("addToQueue", async ({ spaceId, queueItem }: { spaceId: string; queueItem: QueueItem }) => {
-      // check if item already in queue
-      const existingQueue = await redisClient.zrange(redisKeys.queue(spaceId), 0, -1);
-      const isAlreadyInQueue = existingQueue.some((item) => {
-        const parsedItem = JSON.parse(item);
-        return parsedItem.url === queueItem.url;
-      });
-      if (isAlreadyInQueue) {
+      const added = await addQueueItem(spaceId, queueItem, redisClient);
+      if (!added) {
         return;
       }
-      await redisClient.zadd(redisKeys.queue(spaceId), 0, JSON.stringify(queueItem));
-      const updatedQueue = await redisClient.zrange(redisKeys.queue(spaceId), 0, -1);
-      socket.to(spaceId).emit("queueUpdated", parseQueueItems(updatedQueue));
+      await emitQueueUpdatedWithVotes(spaceId, io, redisClient);
     });
 
     socket.on("disconnecting", async () => {

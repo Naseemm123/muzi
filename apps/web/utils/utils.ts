@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// ===== Shared Spotify Types =====
 export interface YoutubeVideo {
   id: string;
   name: string;
@@ -13,6 +12,8 @@ export interface QueueItem {
   name?: string;
   imageUrl?: string;
   artists?: string[];
+  voteCount?: number;
+  hasUpvoted?: boolean;
 }
 
 export function extractVideoId(url: string): string | null {

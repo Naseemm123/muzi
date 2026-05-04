@@ -2,11 +2,7 @@ import axios from "axios";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-
-function extractVideoId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
-  return match?.[1] ?? null;
-}
+import { extractVideoId } from "@/utils/utils";
 
 export async function POST(request: Request) {
   try {

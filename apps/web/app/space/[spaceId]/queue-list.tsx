@@ -1,12 +1,17 @@
 "use client";
 
+import { ArrowBigUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import type { QueueItem } from "@/utils/utils";
+import { Socket } from "socket.io-client";
 
-interface QueueListProps {
-  queue: Array<{ url: string; name?: string; imageUrl?: string; artists?: string[] }>;
-}
 
-export function QueueList({ queue }: QueueListProps) {
+export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<QueueItem>; socket: Socket | null; spaceId: string; userId: string }) {
+
+  function toggleUpvote(url: string, isCurrentlyUpvoted: boolean) {
+    socket?.emit("setTrackVote", { trackId: url, spaceId, userId, isUpvoted: !isCurrentlyUpvoted });
+  }
+
   return (
     <Card className="backdrop-blur-sm bg-card/80 border-border/50 h-fit">
       <CardHeader>
@@ -45,6 +50,22 @@ export function QueueList({ queue }: QueueListProps) {
                     <p className="text-xs text-muted-foreground truncate">{item.artists.join(", ")}</p>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleUpvote(item.url, Boolean(item.hasUpvoted))}
+                  aria-pressed={Boolean(item.hasUpvoted)}
+                  className={`shrink-0 inline-flex items-center justify-center rounded-full border p-1.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 ${
+                    item.hasUpvoted
+                      ? "border-primary/50 bg-primary/15 text-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]"
+                      : "border-border/40 bg-background/70 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  }`}
+                  aria-label={`${item.hasUpvoted ? "Remove upvote from" : "Upvote"} ${item.name || "track"}`}
+                >
+                  <ArrowBigUp
+                    className={`h-4 w-4 ${item.hasUpvoted ? "fill-current" : ""}`}
+                  />
+                </button>
               </div>
             ))}
           </div>

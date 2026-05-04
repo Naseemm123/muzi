@@ -17,6 +17,15 @@ export interface QueueItem {
   name?: string;
   imageUrl?: string;
   artists?: string[];
+  voteCount?: number;
+  hasUpvoted?: boolean;
+}
+
+export interface SetTrackVotePayload {
+  spaceId: string;
+  trackId: string;
+  userId: string;
+  isUpvoted: boolean;
 }
 
 export interface PlayerEventPayload {
@@ -27,7 +36,6 @@ export interface PlayerEventPayload {
   currentTime: number;
   occurredAtMs: number;
   playbackRate: number;
-  isSeeking?: boolean;
 }
 
 export interface PlaybackSnapshot {
@@ -36,9 +44,4 @@ export interface PlaybackSnapshot {
   currentTime: number;
   occurredAtMs: number;
   playbackRate: number;
-}
-
-export interface SnapshotRequestPayload {
-  spaceId: string;
-  videoId: string;
 }

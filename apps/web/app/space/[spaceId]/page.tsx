@@ -97,7 +97,7 @@ export default function Space() {
               queue={queue} setQueue={setQueue} 
               spaceId={spaceId} />
 
-            <QueueList queue={queue} />
+            <QueueList queue={queue} socket={socketRef.current} spaceId={spaceId} userId={userId} />
             
           </div>
 

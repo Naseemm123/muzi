@@ -46,6 +46,7 @@ export function YoutubeInput({ socket, currentTrack, setCurrentTrack, queue, set
         name: metadata?.name || url,
         imageUrl: metadata?.imageUrl,
         artists: metadata?.artists,
+        hasUpvoted: false,
       };
 
       setQueue((prevQueue) => [...prevQueue, queueItem]);

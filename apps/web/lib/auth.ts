@@ -17,8 +17,8 @@ export const auth = betterAuth({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
             redirectUri: `${process.env.BETTER_AUTH_URL}/api/auth/callback/google`,
-            // scope: ["https://www.googleapis.com/auth/youtube.readonly"],
             scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/youtube.readonly"],
+            accessType: "offline",
         },
     }
 });

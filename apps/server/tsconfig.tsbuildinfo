@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/socket.ts","./src/socket/parsers.ts","./src/socket/redis-keys.ts","./src/socket/space-state.ts","./src/socket/types.ts","./src/socket/youtube.ts"],"version":"5.7.3"}
+{"root":["./src/index.ts","./src/socket.ts","./src/socket/parsers.ts","./src/socket/queue-service.ts","./src/socket/redis-keys.ts","./src/socket/space-state.ts","./src/socket/types.ts","./src/socket/youtube.ts"],"version":"5.7.3"}
