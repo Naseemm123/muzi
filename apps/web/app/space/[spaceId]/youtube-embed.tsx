@@ -127,7 +127,7 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
 
   if (!currentTrack.embedUrl) {
     return (
-      <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
+      <Card className="h-fit overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] shadow-xl backdrop-blur-xl">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5">
             <Music className="w-8 h-8 text-muted-foreground" />
@@ -140,7 +140,7 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
   }
 
   return (
-    <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
+    <Card className="h-fit overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] shadow-xl backdrop-blur-xl">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Music className="w-5 h-5" />
@@ -148,12 +148,12 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-lg bg-black p-0 m-0" style={{ borderRadius: "8px" }}>
+        <div className="m-0 overflow-hidden rounded-xl border border-white/10 bg-black p-0">
           <ReactPlayer
             ref={playerRef}
             src={currentTrack.embedUrl}
             width="100%"
-            height="352px"
+            height="min(56vw, 460px)"
             controls={isAdmin}
             playing={playing}
             onPlaying={handlePlaying}
@@ -161,7 +161,7 @@ export function YoutubeEmbed({ currentTrack, socket, spaceId, userId, isAdmin, p
             onReady={() => {setIsPlayerReady(true); setPlaying(true);}}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
-            style={{ borderRadius: "8px", overflow: "hidden" }}
+            style={{ borderRadius: "12px", overflow: "hidden", aspectRatio: "16 / 9", maxHeight: "460px" }}
           />
         </div>
       </CardContent>

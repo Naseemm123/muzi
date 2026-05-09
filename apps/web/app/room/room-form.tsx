@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@workspace/ui/components/card";
 import { UserPlus, Users, ArrowRight, Music, Sparkles } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
 
 interface RoomFormProps {
   session: any;
@@ -29,11 +30,25 @@ export function RoomForm({ session, error }: RoomFormProps) {
   const [mode, setMode] = useState<FormMode>("join");
   const [roomCode, setRoomCode] = useState("");
   const [roomName, setRoomName] = useState("");
+  const [isJoiningPending, setIsJoiningPending] = useState(false);
+  const [isCreatingPending, setIsCreatingPending] = useState(false);
 
 
-  // TODO: check if room already exists from backend, if yes join, else create the room and join as admin
-  const [joinState, joinAction, isJoiningPending] = useActionState(() => router.push(`/space/${roomCode}?intent=join`), null);
-  const [createState, createAction, isCreatingPending] = useActionState(() => router.push(`/space/${roomName}?intent=create`), null);
+  function handleJoinSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedRoomCode = roomCode.trim();
+    if (!normalizedRoomCode) return;
+    setIsJoiningPending(true);
+    router.push(`/space/${normalizedRoomCode}?intent=join`);
+  }
+
+  function handleCreateSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedRoomName = roomName.trim();
+    if (!normalizedRoomName || !session?.user?.id) return;
+    setIsCreatingPending(true);
+    router.push(`/space/${normalizedRoomName}?intent=create`);
+  }
 
   const isPending = isJoiningPending || isCreatingPending;
 
@@ -65,7 +80,10 @@ export function RoomForm({ session, error }: RoomFormProps) {
           />
           <button
             type="button"
-            onClick={() => setMode("join")}
+            onClick={() => {
+              setMode("join");
+              setIsCreatingPending(false);
+            }}
             className={cn(
               "relative z-10 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-200",
               mode === "join"
@@ -78,7 +96,10 @@ export function RoomForm({ session, error }: RoomFormProps) {
           </button>
           <button
             type="button"
-            onClick={() => setMode("create")}
+            onClick={() => {
+              setMode("create");
+              setIsJoiningPending(false);
+            }}
             className={cn(
               "relative z-10 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-200",
               mode === "create"
@@ -94,7 +115,7 @@ export function RoomForm({ session, error }: RoomFormProps) {
 
       <CardContent className="space-y-6">
         {mode === "join" ? (
-          <form action={joinAction} className="space-y-4">
+          <form onSubmit={handleJoinSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="roomCode" className="text-sm font-medium text-white/90">
                 Room Code
@@ -132,7 +153,7 @@ export function RoomForm({ session, error }: RoomFormProps) {
             </Button>
           </form>
         ) : (
-          <form action={createAction} className="space-y-4">
+          <form onSubmit={handleCreateSubmit} className="space-y-4">
             <input type="hidden" name="adminId" value={session?.user?.id ?? ""} />
             <div className="space-y-2">
               <label htmlFor="roomName" className="text-sm font-medium text-white/90">

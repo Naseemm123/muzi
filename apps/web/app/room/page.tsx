@@ -12,8 +12,6 @@ export default async function Room({ searchParams }: {  searchParams: Promise<{ 
     headers: await headers() 
   });
 
-  console.log("Session in Room page:", session);
-
   if(!session){
       redirect('/signin');
   }

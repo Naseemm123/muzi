@@ -13,7 +13,7 @@ export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<Que
   }
 
   return (
-    <Card className="h-fit border-white/10 bg-white/[0.03] backdrop-blur-xl">
+    <Card className="h-fit overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-xl backdrop-blur-xl">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Queue ({queue.length})</span>
@@ -28,11 +28,11 @@ export function QueueList({ queue, socket, spaceId, userId }: { queue: Array<Que
             <p className="text-sm text-muted-foreground">No songs queued yet</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
             {queue.map((item, idx) => (
               <div
                 key={`${item.url}-${idx}`}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] p-2 transition-colors hover:bg-white/[0.04]"
+                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-2.5 transition-colors hover:bg-white/[0.05]"
               >
                 <div className="relative shrink-0 w-12 h-12 rounded-md overflow-hidden bg-muted/30 border border-border/20">
                   {item.imageUrl ? (
