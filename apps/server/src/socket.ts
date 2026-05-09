@@ -21,8 +21,9 @@ import type {
 import { extractVideoId } from "./socket/youtube";
 
 export function initializeSocketServer() {
+  const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:3000";
   const io = new Server(httpServer, {
-    cors: { origin: "http://localhost:3000" },
+    cors: { origin: corsOrigin },
   });
 
   io.on("connection", (socket) => {

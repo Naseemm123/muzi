@@ -16,7 +16,7 @@ export const redisClient = new Redis({
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
   }),
@@ -24,7 +24,7 @@ app.use(
 
 app.use(express.json());
 
-const PORT: number = 3001;
+const PORT: number = parseInt(process.env.PORT || "3001", 10);
 
 app.get("/", (req, res) => {
   res.json({ message: "Hello World" });
@@ -37,5 +37,5 @@ app.get("/join", (req, res) => {
 initializeSocketServer();
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on 0.0.0.0:${PORT}`);
 });
