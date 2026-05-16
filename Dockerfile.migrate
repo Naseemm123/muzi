@@ -1,0 +1,21 @@
+FROM node:20-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+FROM base AS pruner
+WORKDIR /app
+COPY . .
+RUN pnpm dlx turbo prune @workspace/orm-drizzle --docker
+
+FROM base AS builder
+WORKDIR /app
+# Copy pruned workspace
+COPY --from=pruner /app/out/json/ ./
+COPY --from=pruner /app/out/full/ ./
+RUN pnpm install
+
+WORKDIR /app/packages/orm-drizzle
+
+# CMD will run the migration command
+CMD ["npx", "drizzle-kit", "migrate"]

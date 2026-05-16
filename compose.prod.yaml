@@ -8,12 +8,26 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:alpine
     restart: unless-stopped
     volumes:
       - redis_data:/data
+
+  migrator:
+    image: ${ACR_LOGIN_SERVER}/${MIGRATOR_IMAGE:-muzi-migrator}:${IMAGE_TAG}
+    restart: "no"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
 
   server:
     image: ${ACR_LOGIN_SERVER}/${SERVER_IMAGE}:${IMAGE_TAG}
@@ -39,8 +53,12 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     depends_on:
-      - db
-      - server
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+      server:
+        condition: service_started
     ports:
       - "${WEB_PORT:-3000}:3000"
 
