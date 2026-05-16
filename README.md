@@ -1,49 +1,142 @@
-# shadcn/ui monorepo template
+# Muzi
 
-This template is for creating a monorepo with shadcn/ui.
+A modern, real-time collaborative music synchronization platform built with a monorepo architecture. Muzi allows users to create "Spaces" where they can synchronize YouTube playback, manage shared queues, and vote on upcoming tracks.
 
-## Usage
+## 🚀 Features
 
+- **Real-time Synchronization**: Synchronized YouTube playback across all participants in a Space.
+- **Collaborative Queue**: Anyone in a Space can add tracks to the shared queue.
+- **Voting System**: Real-time upvoting and downvoting to prioritize tracks in the queue.
+- **Space Management**: Unique Space IDs for private or public sessions.
+- **Authentication**: Secure login with Social Providers (Google) via Better Auth.
+- **Modern UI**: Built with React 19, Tailwind CSS 4, and shadcn/ui.
+
+## 🛠️ Tech Stack
+
+### Monorepo Tools
+- **Turborepo**: High-performance build system for JavaScript and TypeScript monorepos.
+- **pnpm**: Fast, disk space efficient package manager.
+
+### Frontend
+- **Next.js 15**: App Router, Server Components.
+- **Tailwind CSS 4**: Modern styling with the latest engine.
+- **Better Auth**: Comprehensive authentication solution.
+- **Socket.io-client**: Real-time communication.
+
+### Backend
+- **Node.js (Express)**: Fast and minimalist web framework.
+- **Socket.io**: Bidirectional, low-latency communication.
+- **Redis**: High-performance in-memory data store for space state and queue management.
+
+### Database & ORM
+- **PostgreSQL**: Reliable relational database.
+- **Drizzle ORM**: Type-safe TypeScript ORM for productivity and performance.
+
+## 📂 Project Structure
+
+```text
+├── apps/
+│   ├── web/          # Next.js frontend application
+│   └── server/       # Express/Socket.io backend application
+├── packages/
+│   ├── orm-drizzle/  # Shared database schema and migrations
+│   ├── ui/           # Shared UI component library (shadcn/ui)
+│   ├── typescript-config/ # Shared TS configurations
+│   └── eslint-config/ # Shared linting rules
+├── compose.yaml      # Docker Compose for local development
+└── turbo.json        # Turborepo configuration
+```
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (v20 or later)
+- [pnpm](https://pnpm.io/) (v10 or later)
+- [Docker & Docker Compose](https://www.docker.com/) (Optional, for containerized setup)
+
+## 🛠️ Getting Started
+
+### 1. Clone the repository
 ```bash
-pnpm dlx shadcn@latest init
+git clone <your-repo-url>
+cd muzi
 ```
 
-## Adding components
-
-To add components to your app, run the following command at the root of your `web` app:
-
+### 2. Environment Configuration
+Copy the `.env.example` file to `.env` and fill in the required variables:
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+cp .env.example .env
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+### 3. Local Development (Manual Setup)
 
-## Tailwind
+If you have PostgreSQL and Redis running locally, follow these steps:
 
-Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button";
-```
-
-## Deployment Baseline (Azure VM + ACR + Docker Compose)
-
-1. Copy `.env.example` to `.env` and fill all values.
-2. Build and push images to your Azure Container Registry:
+**Install dependencies:**
 ```bash
-docker build -f apps/web/Dockerfile -t <acr-login-server>/<web-image>:<tag> .
-docker build -f apps/server/Dockerfile -t <acr-login-server>/<server-image>:<tag> .
-docker push <acr-login-server>/<web-image>:<tag>
-docker push <acr-login-server>/<server-image>:<tag>
-```
-3. On the VM, login to ACR and run production compose:
-```bash
-docker login <acr-login-server>
-docker compose --env-file .env -f compose.prod.yaml up -d
+pnpm install
 ```
 
-Use `compose.yaml` for local/dev builds and `compose.prod.yaml` for image-based deployments.
+**Setup the Database:**
+```bash
+cd packages/orm-drizzle
+# Generate migration files
+pnpm drizzle-kit generate
+# Push schema to your local database
+pnpm drizzle-kit push
+cd ../..
+```
+
+**Run in Development Mode:**
+```bash
+pnpm dev
+```
+The applications will be available at:
+- **Web**: `http://localhost:3000`
+- **Server**: `http://localhost:3001`
+
+---
+
+### 4. Local Development (Docker Setup)
+
+This is the easiest way to get started with all dependencies (DB, Redis) pre-configured.
+
+**Spin up the infrastructure:**
+```bash
+docker compose up -d
+```
+
+This will start:
+- **PostgreSQL**: Port 5432
+- **Redis**: Port 6379
+- **Server**: Port 3001
+- **Web**: Port 3000
+
+---
+
+## 🔧 Common Commands
+
+| Command | Description |
+| :--- | :--- |
+| `pnpm dev` | Starts all apps in development mode with Turborepo |
+| `pnpm build` | Builds all apps and packages |
+| `pnpm lint` | Runs ESLint across the entire workspace |
+| `pnpm format` | Formats all files with Prettier |
+
+## 🛠️ Working with Database
+
+When you change the database schema in `packages/orm-drizzle/src/db/schema.ts`, follow these steps:
+
+1.  **Generate a new migration:**
+    ```bash
+    cd packages/orm-drizzle
+    npx drizzle-kit generate
+    ```
+2.  **Apply to local database (Dev):**
+    ```bash
+    npx drizzle-kit push
+    ```
+
+## 📄 License
+
+This project is licensed under the [ISC License](LICENSE).
